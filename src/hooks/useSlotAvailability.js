@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-const MAX_REGISTRATIONS_PER_SLOT = 13;
+const MAX_REGISTRATIONS_PER_SLOT = 2;
 const TOTAL_SLOTS = 10;
 
 export const useSlotAvailability = () => {

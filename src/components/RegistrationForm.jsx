@@ -52,6 +52,26 @@ const RegistrationForm = () => {
     setSubmitStatus(null);
 
     try {
+      // Check if WhatsApp number already exists
+      const { data: existingRegistration, error: checkError } = await supabase
+        .from('registrations')
+        .select('whatsapp_mobile')
+        .eq('whatsapp_mobile', formData.whatsapp_mobile)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingRegistration) {
+        setSubmitStatus({
+          type: 'error',
+          message: 'This WhatsApp number is already registered.',
+        });
+        setSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('registrations')
         .insert([formData]);
@@ -74,6 +94,8 @@ const RegistrationForm = () => {
         type: 'error',
         message: err.message.includes('slot is full')
           ? 'This slot is now full. Please select another slot.'
+          : err.message.includes('duplicate') || err.message.includes('unique')
+          ? 'This WhatsApp number is already registered.'
           : 'Registration failed. Please try again.',
       });
       refetch();

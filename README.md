@@ -28,12 +28,13 @@ A responsive registration form built with React and Vite, using Supabase as the 
      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
      name TEXT NOT NULL,
      email TEXT NOT NULL,
-     whatsapp_mobile TEXT NOT NULL,
+     whatsapp_mobile TEXT NOT NULL UNIQUE,
      time_slot TEXT NOT NULL CHECK (time_slot IN ('Slot 1', 'Slot 2', 'Slot 3', 'Slot 4', 'Slot 5', 'Slot 6', 'Slot 7', 'Slot 8', 'Slot 9', 'Slot 10')),
      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
    );
 
    CREATE INDEX idx_time_slot ON registrations(time_slot);
+   CREATE UNIQUE INDEX idx_unique_whatsapp ON registrations(whatsapp_mobile);
    ```
 
 4. **Enable Row Level Security (RLS):**
