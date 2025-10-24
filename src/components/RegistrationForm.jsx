@@ -1,0 +1,184 @@
+import { useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
+import { useSlotAvailability } from '../hooks/useSlotAvailability';
+import './RegistrationForm.css';
+
+const RegistrationForm = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    whatsapp_mobile: '',
+    time_slot: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const { availableSlots, loading, error, refetch } = useSlotAvailability();
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      return 'Name is required';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      return 'Valid email is required';
+    }
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    if (!phoneRegex.test(formData.whatsapp_mobile)) {
+      return 'Valid WhatsApp mobile number is required';
+    }
+    if (!formData.time_slot) {
+      return 'Please select a time slot';
+    }
+    return null;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const validationError = validateForm();
+    if (validationError) {
+      setSubmitStatus({ type: 'error', message: validationError });
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitStatus(null);
+
+    try {
+      const { error } = await supabase
+        .from('registrations')
+        .insert([formData]);
+
+      if (error) throw error;
+
+      setSubmitStatus({
+        type: 'success',
+        message: 'Registration successful! You have been registered for ' + formData.time_slot,
+      });
+      setFormData({
+        name: '',
+        email: '',
+        whatsapp_mobile: '',
+        time_slot: '',
+      });
+      refetch();
+    } catch (err) {
+      setSubmitStatus({
+        type: 'error',
+        message: err.message.includes('slot is full')
+          ? 'This slot is now full. Please select another slot.'
+          : 'Registration failed. Please try again.',
+      });
+      refetch();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Loading available slots...</div>;
+  }
+
+  if (error) {
+    return <div className="error">Error loading slots: {error}</div>;
+  }
+
+  if (availableSlots.length === 0) {
+    return (
+      <div className="container">
+        <div className="form-card">
+          <h1>Registration Form</h1>
+          <div className="error">All slots are currently full. Please check back later.</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container">
+      <div className="form-card">
+        <h1>Registration Form</h1>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="name">Name *</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Email *</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="whatsapp_mobile">WhatsApp Mobile *</label>
+            <input
+              type="tel"
+              id="whatsapp_mobile"
+              name="whatsapp_mobile"
+              value={formData.whatsapp_mobile}
+              onChange={handleChange}
+              placeholder="+1234567890"
+              required
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="time_slot">Time Slot *</label>
+            <select
+              id="time_slot"
+              name="time_slot"
+              value={formData.time_slot}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+            >
+              <option value="">Select a time slot</option>
+              {availableSlots.map((slot) => (
+                <option key={slot} value={slot}>
+                  {slot}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button type="submit" disabled={submitting} className="submit-btn">
+            {submitting ? 'Submitting...' : 'Register'}
+          </button>
+        </form>
+
+        {submitStatus && (
+          <div className={`status-message ${submitStatus.type}`}>
+            {submitStatus.message}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default RegistrationForm;
