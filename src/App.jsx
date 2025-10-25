@@ -6,20 +6,25 @@ import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
 function App() {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    return localStorage.getItem('adminAuthenticated') === 'true';
+  const [adminUser, setAdminUser] = useState(() => {
+    const savedUser = localStorage.getItem('adminUser');
+    return savedUser ? JSON.parse(savedUser) : null;
   });
 
   useEffect(() => {
-    localStorage.setItem('adminAuthenticated', isAdminAuthenticated);
-  }, [isAdminAuthenticated]);
+    if (adminUser) {
+      localStorage.setItem('adminUser', JSON.stringify(adminUser));
+    } else {
+      localStorage.removeItem('adminUser');
+    }
+  }, [adminUser]);
 
-  const handleLogin = () => {
-    setIsAdminAuthenticated(true);
+  const handleLogin = (userData) => {
+    setAdminUser(userData);
   };
 
   const handleLogout = () => {
-    setIsAdminAuthenticated(false);
+    setAdminUser(null);
   };
 
   return (
@@ -29,8 +34,8 @@ function App() {
         <Route
           path="/admin"
           element={
-            isAdminAuthenticated ? (
-              <AdminDashboard onLogout={handleLogout} />
+            adminUser ? (
+              <AdminDashboard onLogout={handleLogout} user={adminUser} />
             ) : (
               <AdminLogin onLogin={handleLogin} />
             )

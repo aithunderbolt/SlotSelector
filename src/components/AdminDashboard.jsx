@@ -3,19 +3,28 @@ import { supabase } from '../lib/supabaseClient';
 import * as XLSX from 'xlsx';
 import './AdminDashboard.css';
 
-const AdminDashboard = ({ onLogout }) => {
+const AdminDashboard = ({ onLogout, user }) => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [slotFilter, setSlotFilter] = useState('all');
+  const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot);
+
+  const isSlotAdmin = user.role === 'slot_admin';
+  const userSlot = user.assigned_slot;
 
   const fetchRegistrations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('registrations')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (isSlotAdmin) {
+        query = query.eq('time_slot', userSlot);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setRegistrations(data);
@@ -113,46 +122,72 @@ const AdminDashboard = ({ onLogout }) => {
   return (
     <div className="admin-dashboard">
       <div className="admin-header">
-        <h1>Admin Dashboard</h1>
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p className="user-info">
+            Logged in as: <strong>{user.username}</strong> ({user.role === 'super_admin' ? 'Super Admin' : `Slot Admin - ${userSlot}`})
+          </p>
+        </div>
         <button onClick={onLogout} className="logout-btn">Logout</button>
       </div>
 
       <div className="stats-container">
         <div className="stat-card">
-          <h3>Total Registrations</h3>
+          <h3>{isSlotAdmin ? `${userSlot} Registrations` : 'Total Registrations'}</h3>
           <p className="stat-number">{registrations.length}</p>
         </div>
-        {Object.entries(slotCounts).map(([slot, count]) => (
+        {!isSlotAdmin && Object.entries(slotCounts).map(([slot, count]) => (
           <div key={slot} className={`stat-card ${count >= 2 ? 'full' : ''}`}>
             <h3>{slot}</h3>
             <p className="stat-number">{count}/2</p>
           </div>
         ))}
+        {isSlotAdmin && (
+          <div className={`stat-card ${slotCounts[userSlot] >= 2 ? 'full' : ''}`}>
+            <h3>Capacity</h3>
+            <p className="stat-number">{slotCounts[userSlot]}/2</p>
+          </div>
+        )}
       </div>
 
-      <div className="filter-section">
-        <div className="filter-controls">
-          <label htmlFor="slot-filter">Filter by Slot:</label>
-          <select
-            id="slot-filter"
-            value={slotFilter}
-            onChange={(e) => setSlotFilter(e.target.value)}
-          >
-            <option value="all">All Slots</option>
-            {Object.keys(slotCounts).map((slot) => (
-              <option key={slot} value={slot}>{slot}</option>
-            ))}
-          </select>
+      {!isSlotAdmin && (
+        <div className="filter-section">
+          <div className="filter-controls">
+            <label htmlFor="slot-filter">Filter by Slot:</label>
+            <select
+              id="slot-filter"
+              value={slotFilter}
+              onChange={(e) => setSlotFilter(e.target.value)}
+            >
+              <option value="all">All Slots</option>
+              {Object.keys(slotCounts).map((slot) => (
+                <option key={slot} value={slot}>{slot}</option>
+              ))}
+            </select>
+          </div>
+          <div className="download-buttons">
+            <button onClick={handleDownloadAll} className="download-btn">
+              Download All
+            </button>
+            <button onClick={handleDownloadFiltered} className="download-btn secondary">
+              Download {slotFilter === 'all' ? 'All' : slotFilter}
+            </button>
+          </div>
         </div>
-        <div className="download-buttons">
-          <button onClick={handleDownloadAll} className="download-btn">
-            Download All
-          </button>
-          <button onClick={handleDownloadFiltered} className="download-btn secondary">
-            Download {slotFilter === 'all' ? 'All' : slotFilter}
-          </button>
+      )}
+
+      {isSlotAdmin && (
+        <div className="filter-section">
+          <div className="filter-controls">
+            <h3>{userSlot} Registrations</h3>
+          </div>
+          <div className="download-buttons">
+            <button onClick={handleDownloadFiltered} className="download-btn">
+              Download {userSlot} Data
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {error && <div className="error-message">{error}</div>}
 

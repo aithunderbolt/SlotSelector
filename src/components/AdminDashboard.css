@@ -16,9 +16,15 @@
 }
 
 .admin-header h1 {
-  margin: 0;
+  margin: 0 0 5px 0;
   color: #333;
   font-size: 28px;
+}
+
+.user-info {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
 }
 
 .logout-btn {

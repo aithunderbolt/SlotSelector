@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import './AdminLogin.css';
 
 const AdminLogin = ({ onLogin }) => {
@@ -7,18 +8,34 @@ const AdminLogin = ({ onLogin }) => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const adminUsername = import.meta.env.VITE_ADMIN_USERNAME;
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+    setLoading(true);
+    setError('');
 
-    if (credentials.username === adminUsername && credentials.password === adminPassword) {
-      onLogin();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', credentials.username)
+        .eq('password', credentials.password)
+        .single();
+
+      if (error || !data) {
+        setError('Invalid username or password');
+        setLoading(false);
+        return;
+      }
+
+      onLogin(data);
       setError('');
-    } else {
+    } catch (err) {
       setError('Invalid username or password');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,7 +65,9 @@ const AdminLogin = ({ onLogin }) => {
             />
           </div>
           {error && <div className="error-message">{error}</div>}
-          <button type="submit" className="login-btn">Login</button>
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
         </form>
       </div>
     </div>
