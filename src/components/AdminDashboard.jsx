@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import * as XLSX from 'xlsx';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout }) => {
@@ -65,6 +66,46 @@ const AdminDashboard = ({ onLogout }) => {
     ? registrations
     : registrations.filter((reg) => reg.time_slot === slotFilter);
 
+  const downloadExcel = (dataToExport, filename) => {
+    const exportData = dataToExport.map((reg) => ({
+      Name: reg.name,
+      Email: reg.email,
+      'WhatsApp Mobile': reg.whatsapp_mobile,
+      'Time Slot': reg.time_slot,
+      'Registered At': new Date(reg.created_at).toLocaleString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
+
+    const colWidths = [
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 20 },
+    ];
+    worksheet['!cols'] = colWidths;
+
+    XLSX.writeFile(workbook, filename);
+  };
+
+  const handleDownloadAll = () => {
+    downloadExcel(registrations, 'all_registrations.xlsx');
+  };
+
+  const handleDownloadFiltered = () => {
+    if (slotFilter === 'all') {
+      downloadExcel(registrations, 'all_registrations.xlsx');
+    } else {
+      downloadExcel(
+        filteredRegistrations,
+        `${slotFilter.replace(' ', '_')}_registrations.xlsx`
+      );
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading registrations...</div>;
   }
@@ -90,17 +131,27 @@ const AdminDashboard = ({ onLogout }) => {
       </div>
 
       <div className="filter-section">
-        <label htmlFor="slot-filter">Filter by Slot:</label>
-        <select
-          id="slot-filter"
-          value={slotFilter}
-          onChange={(e) => setSlotFilter(e.target.value)}
-        >
-          <option value="all">All Slots</option>
-          {Object.keys(slotCounts).map((slot) => (
-            <option key={slot} value={slot}>{slot}</option>
-          ))}
-        </select>
+        <div className="filter-controls">
+          <label htmlFor="slot-filter">Filter by Slot:</label>
+          <select
+            id="slot-filter"
+            value={slotFilter}
+            onChange={(e) => setSlotFilter(e.target.value)}
+          >
+            <option value="all">All Slots</option>
+            {Object.keys(slotCounts).map((slot) => (
+              <option key={slot} value={slot}>{slot}</option>
+            ))}
+          </select>
+        </div>
+        <div className="download-buttons">
+          <button onClick={handleDownloadAll} className="download-btn">
+            Download All
+          </button>
+          <button onClick={handleDownloadFiltered} className="download-btn secondary">
+            Download {slotFilter === 'all' ? 'All' : slotFilter}
+          </button>
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
