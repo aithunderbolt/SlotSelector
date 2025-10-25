@@ -126,7 +126,7 @@ const RegistrationForm = () => {
   return (
     <div className="container">
       <div className="form-card">
-        <h1>Registration Form</h1>
+        <h1>Tilawah Registration Form</h1>
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
