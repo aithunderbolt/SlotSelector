@@ -5,23 +5,41 @@ import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout, user }) => {
   const [registrations, setRegistrations] = useState([]);
+  const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot);
+  const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot_id);
 
   const isSlotAdmin = user.role === 'slot_admin';
-  const userSlot = user.assigned_slot;
+  const userSlotId = user.assigned_slot_id;
 
-  const fetchRegistrations = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
+
+      // Fetch slots
+      const { data: slotsData, error: slotsError } = await supabase
+        .from('slots')
+        .select('*')
+        .order('slot_order', { ascending: true });
+
+      if (slotsError) throw slotsError;
+      setSlots(slotsData);
+
+      // Fetch registrations with slot info
       let query = supabase
         .from('registrations')
-        .select('*')
+        .select(`
+          *,
+          slots (
+            id,
+            display_name
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (isSlotAdmin) {
-        query = query.eq('time_slot', userSlot);
+        query = query.eq('slot_id', userSlotId);
       }
 
       const { data, error } = await query;
@@ -31,39 +49,51 @@ const AdminDashboard = ({ onLogout, user }) => {
       setError(null);
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching registrations:', err);
+      console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRegistrations();
+    fetchData();
 
-    const channel = supabase
+    const registrationsChannel = supabase
       .channel('admin-registrations')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'registrations' },
         () => {
-          fetchRegistrations();
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    const slotsChannel = supabase
+      .channel('admin-slots')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'slots' },
+        () => {
+          fetchData();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(registrationsChannel);
+      supabase.removeChannel(slotsChannel);
     };
   }, []);
 
   const getSlotCounts = () => {
     const counts = {};
-    for (let i = 1; i <= 10; i++) {
-      counts[`Slot ${i}`] = 0;
-    }
+    slots.forEach((slot) => {
+      counts[slot.id] = 0;
+    });
     registrations.forEach((reg) => {
-      if (counts[reg.time_slot] !== undefined) {
-        counts[reg.time_slot]++;
+      if (counts[reg.slot_id] !== undefined) {
+        counts[reg.slot_id]++;
       }
     });
     return counts;
@@ -73,14 +103,19 @@ const AdminDashboard = ({ onLogout, user }) => {
 
   const filteredRegistrations = slotFilter === 'all'
     ? registrations
-    : registrations.filter((reg) => reg.time_slot === slotFilter);
+    : registrations.filter((reg) => reg.slot_id === slotFilter);
+
+  const getSlotDisplayName = (slotId) => {
+    const slot = slots.find(s => s.id === slotId);
+    return slot ? slot.display_name : 'Unknown Slot';
+  };
 
   const downloadExcel = (dataToExport, filename) => {
     const exportData = dataToExport.map((reg) => ({
       Name: reg.name,
       Email: reg.email,
       'WhatsApp Mobile': reg.whatsapp_mobile,
-      'Time Slot': reg.time_slot,
+      'Time Slot': reg.slots?.display_name || getSlotDisplayName(reg.slot_id),
       'Registered At': new Date(reg.created_at).toLocaleString(),
     }));
 
@@ -108,9 +143,10 @@ const AdminDashboard = ({ onLogout, user }) => {
     if (slotFilter === 'all') {
       downloadExcel(registrations, 'all_registrations.xlsx');
     } else {
+      const slotName = getSlotDisplayName(slotFilter);
       downloadExcel(
         filteredRegistrations,
-        `${slotFilter.replace(' ', '_')}_registrations.xlsx`
+        `${slotName.replace(/\s+/g, '_')}_registrations.xlsx`
       );
     }
   };
@@ -119,13 +155,15 @@ const AdminDashboard = ({ onLogout, user }) => {
     return <div className="loading">Loading registrations...</div>;
   }
 
+  const userSlotName = isSlotAdmin ? getSlotDisplayName(userSlotId) : '';
+
   return (
     <div className="admin-dashboard">
       <div className="admin-header">
         <div>
           <h1>Admin Dashboard</h1>
           <p className="user-info">
-            Logged in as: <strong>{user.username}</strong> ({user.role === 'super_admin' ? 'Super Admin' : `Slot Admin - ${userSlot}`})
+            Logged in as: <strong>{user.username}</strong> ({user.role === 'super_admin' ? 'Super Admin' : `Slot Admin - ${userSlotName}`})
           </p>
         </div>
         <button onClick={onLogout} className="logout-btn">Logout</button>
@@ -133,19 +171,19 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       <div className="stats-container">
         <div className="stat-card">
-          <h3>{isSlotAdmin ? `${userSlot} Registrations` : 'Total Registrations'}</h3>
+          <h3>{isSlotAdmin ? `${userSlotName} Registrations` : 'Total Registrations'}</h3>
           <p className="stat-number">{registrations.length}</p>
         </div>
-        {!isSlotAdmin && Object.entries(slotCounts).map(([slot, count]) => (
-          <div key={slot} className={`stat-card ${count >= 2 ? 'full' : ''}`}>
-            <h3>{slot}</h3>
-            <p className="stat-number">{count}/2</p>
+        {!isSlotAdmin && slots.map((slot) => (
+          <div key={slot.id} className={`stat-card ${slotCounts[slot.id] >= 2 ? 'full' : ''}`}>
+            <h3>{slot.display_name}</h3>
+            <p className="stat-number">{slotCounts[slot.id]}/2</p>
           </div>
         ))}
         {isSlotAdmin && (
-          <div className={`stat-card ${slotCounts[userSlot] >= 2 ? 'full' : ''}`}>
+          <div className={`stat-card ${slotCounts[userSlotId] >= 2 ? 'full' : ''}`}>
             <h3>Capacity</h3>
-            <p className="stat-number">{slotCounts[userSlot]}/2</p>
+            <p className="stat-number">{slotCounts[userSlotId]}/2</p>
           </div>
         )}
       </div>
@@ -160,8 +198,8 @@ const AdminDashboard = ({ onLogout, user }) => {
               onChange={(e) => setSlotFilter(e.target.value)}
             >
               <option value="all">All Slots</option>
-              {Object.keys(slotCounts).map((slot) => (
-                <option key={slot} value={slot}>{slot}</option>
+              {slots.map((slot) => (
+                <option key={slot.id} value={slot.id}>{slot.display_name}</option>
               ))}
             </select>
           </div>
@@ -170,7 +208,7 @@ const AdminDashboard = ({ onLogout, user }) => {
               Download All
             </button>
             <button onClick={handleDownloadFiltered} className="download-btn secondary">
-              Download {slotFilter === 'all' ? 'All' : slotFilter}
+              Download {slotFilter === 'all' ? 'All' : getSlotDisplayName(slotFilter)}
             </button>
           </div>
         </div>
@@ -179,11 +217,11 @@ const AdminDashboard = ({ onLogout, user }) => {
       {isSlotAdmin && (
         <div className="filter-section">
           <div className="filter-controls">
-            <h3>{userSlot} Registrations</h3>
+            <h3>{userSlotName} Registrations</h3>
           </div>
           <div className="download-buttons">
             <button onClick={handleDownloadFiltered} className="download-btn">
-              Download {userSlot} Data
+              Download {userSlotName} Data
             </button>
           </div>
         </div>
@@ -213,7 +251,7 @@ const AdminDashboard = ({ onLogout, user }) => {
                   <td>{reg.name}</td>
                   <td>{reg.email}</td>
                   <td>{reg.whatsapp_mobile}</td>
-                  <td><span className="slot-badge">{reg.time_slot}</span></td>
+                  <td><span className="slot-badge">{reg.slots?.display_name || getSlotDisplayName(reg.slot_id)}</span></td>
                   <td>{new Date(reg.created_at).toLocaleString()}</td>
                 </tr>
               ))

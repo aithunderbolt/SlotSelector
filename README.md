@@ -24,17 +24,38 @@ A responsive registration form built with React and Vite, using Supabase as the 
 3. **Create Supabase tables:**
    Run this SQL in your Supabase SQL Editor:
    ```sql
+   -- Slots table (master data for time slots)
+   CREATE TABLE slots (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     display_name TEXT NOT NULL UNIQUE,
+     slot_order INTEGER NOT NULL UNIQUE,
+     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
+
+   -- Insert default slots (you can change display_name anytime)
+   INSERT INTO slots (display_name, slot_order) VALUES
+   ('Slot 1', 1),
+   ('Slot 2', 2),
+   ('Slot 3', 3),
+   ('Slot 4', 4),
+   ('Slot 5', 5),
+   ('Slot 6', 6),
+   ('Slot 7', 7),
+   ('Slot 8', 8),
+   ('Slot 9', 9),
+   ('Slot 10', 10);
+
    -- Registrations table
    CREATE TABLE registrations (
      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
      name TEXT NOT NULL,
      email TEXT NOT NULL,
      whatsapp_mobile TEXT NOT NULL UNIQUE,
-     time_slot TEXT NOT NULL CHECK (time_slot IN ('Slot 1', 'Slot 2', 'Slot 3', 'Slot 4', 'Slot 5', 'Slot 6', 'Slot 7', 'Slot 8', 'Slot 9', 'Slot 10')),
+     slot_id UUID NOT NULL REFERENCES slots(id) ON DELETE RESTRICT,
      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
    );
 
-   CREATE INDEX idx_time_slot ON registrations(time_slot);
+   CREATE INDEX idx_slot_id ON registrations(slot_id);
    CREATE UNIQUE INDEX idx_unique_whatsapp ON registrations(whatsapp_mobile);
 
    -- Users table for admin authentication
@@ -43,29 +64,45 @@ A responsive registration form built with React and Vite, using Supabase as the 
      username TEXT NOT NULL UNIQUE,
      password TEXT NOT NULL,
      role TEXT NOT NULL CHECK (role IN ('super_admin', 'slot_admin')),
-     assigned_slot TEXT CHECK (assigned_slot IN ('Slot 1', 'Slot 2', 'Slot 3', 'Slot 4', 'Slot 5', 'Slot 6', 'Slot 7', 'Slot 8', 'Slot 9', 'Slot 10')),
+     assigned_slot_id UUID REFERENCES slots(id) ON DELETE SET NULL,
      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
    );
 
    CREATE UNIQUE INDEX idx_unique_username ON users(username);
 
-   -- Insert sample admin users
-   INSERT INTO users (username, password, role, assigned_slot) VALUES
-   ('superadmin', 'admin123', 'super_admin', NULL),
-   ('slot1admin', 'slot1pass', 'slot_admin', 'Slot 1'),
-   ('slot2admin', 'slot2pass', 'slot_admin', 'Slot 2'),
-   ('slot3admin', 'slot3pass', 'slot_admin', 'Slot 3'),
-   ('slot4admin', 'slot4pass', 'slot_admin', 'Slot 4'),
-   ('slot5admin', 'slot5pass', 'slot_admin', 'Slot 5'),
-   ('slot6admin', 'slot6pass', 'slot_admin', 'Slot 6'),
-   ('slot7admin', 'slot7pass', 'slot_admin', 'Slot 7'),
-   ('slot8admin', 'slot8pass', 'slot_admin', 'Slot 8'),
-   ('slot9admin', 'slot9pass', 'slot_admin', 'Slot 9'),
-   ('slot10admin', 'slot10pass', 'slot_admin', 'Slot 10');
+   -- Insert sample admin users (get slot IDs first)
+   INSERT INTO users (username, password, role, assigned_slot_id) 
+   SELECT 'superadmin', 'admin123', 'super_admin', NULL
+   UNION ALL
+   SELECT 'slot1admin', 'slot1pass', 'slot_admin', id FROM slots WHERE slot_order = 1
+   UNION ALL
+   SELECT 'slot2admin', 'slot2pass', 'slot_admin', id FROM slots WHERE slot_order = 2
+   UNION ALL
+   SELECT 'slot3admin', 'slot3pass', 'slot_admin', id FROM slots WHERE slot_order = 3
+   UNION ALL
+   SELECT 'slot4admin', 'slot4pass', 'slot_admin', id FROM slots WHERE slot_order = 4
+   UNION ALL
+   SELECT 'slot5admin', 'slot5pass', 'slot_admin', id FROM slots WHERE slot_order = 5
+   UNION ALL
+   SELECT 'slot6admin', 'slot6pass', 'slot_admin', id FROM slots WHERE slot_order = 6
+   UNION ALL
+   SELECT 'slot7admin', 'slot7pass', 'slot_admin', id FROM slots WHERE slot_order = 7
+   UNION ALL
+   SELECT 'slot8admin', 'slot8pass', 'slot_admin', id FROM slots WHERE slot_order = 8
+   UNION ALL
+   SELECT 'slot9admin', 'slot9pass', 'slot_admin', id FROM slots WHERE slot_order = 9
+   UNION ALL
+   SELECT 'slot10admin', 'slot10pass', 'slot_admin', id FROM slots WHERE slot_order = 10;
    ```
 
 4. **Enable Row Level Security (RLS):**
    ```sql
+   -- Slots table policies
+   ALTER TABLE slots ENABLE ROW LEVEL SECURITY;
+
+   CREATE POLICY "Enable read for all users" ON slots
+     FOR SELECT USING (true);
+
    -- Registrations table policies
    ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
 
@@ -83,12 +120,12 @@ A responsive registration form built with React and Vite, using Supabase as the 
    ```
 
 5. **Optional - Add slot limit constraint:**
-   Create a function to enforce the 13-person limit:
+   Create a function to enforce the 2-person limit per slot:
    ```sql
    CREATE OR REPLACE FUNCTION check_slot_capacity()
    RETURNS TRIGGER AS $$
    BEGIN
-     IF (SELECT COUNT(*) FROM registrations WHERE time_slot = NEW.time_slot) >= 13 THEN
+     IF (SELECT COUNT(*) FROM registrations WHERE slot_id = NEW.slot_id) >= 2 THEN
        RAISE EXCEPTION 'This slot is full';
      END IF;
      RETURN NEW;
@@ -100,6 +137,16 @@ A responsive registration form built with React and Vite, using Supabase as the 
      FOR EACH ROW
      EXECUTE FUNCTION check_slot_capacity();
    ```
+
+6. **To change slot display names:**
+   Simply update the slots table:
+   ```sql
+   -- Example: Change "Slot 1" to "Slot A"
+   UPDATE slots SET display_name = 'Slot A' WHERE slot_order = 1;
+   UPDATE slots SET display_name = 'Slot B' WHERE slot_order = 2;
+   -- etc...
+   ```
+   The changes will reflect immediately across the entire application!
 
 ## Development
 

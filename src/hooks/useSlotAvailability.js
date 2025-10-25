@@ -2,36 +2,49 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const MAX_REGISTRATIONS_PER_SLOT = 2;
-const TOTAL_SLOTS = 10;
 
 export const useSlotAvailability = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [allSlots, setAllSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchSlotCounts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch all slots
+      const { data: slotsData, error: slotsError } = await supabase
+        .from('slots')
+        .select('*')
+        .order('slot_order', { ascending: true });
+
+      if (slotsError) throw slotsError;
+      setAllSlots(slotsData);
+
+      // Fetch registrations
+      const { data: registrationsData, error: registrationsError } = await supabase
         .from('registrations')
-        .select('time_slot');
+        .select('slot_id');
 
-      if (error) throw error;
+      if (registrationsError) throw registrationsError;
 
+      // Count registrations per slot
       const slotCounts = {};
-      for (let i = 1; i <= TOTAL_SLOTS; i++) {
-        slotCounts[`Slot ${i}`] = 0;
-      }
+      slotsData.forEach((slot) => {
+        slotCounts[slot.id] = 0;
+      });
 
-      data.forEach((registration) => {
-        if (slotCounts[registration.time_slot] !== undefined) {
-          slotCounts[registration.time_slot]++;
+      registrationsData.forEach((registration) => {
+        if (slotCounts[registration.slot_id] !== undefined) {
+          slotCounts[registration.slot_id]++;
         }
       });
 
-      const available = Object.entries(slotCounts)
-        .filter(([_, count]) => count < MAX_REGISTRATIONS_PER_SLOT)
-        .map(([slot]) => slot);
+      // Filter available slots
+      const available = slotsData.filter(
+        (slot) => slotCounts[slot.id] < MAX_REGISTRATIONS_PER_SLOT
+      );
 
       setAvailableSlots(available);
       setError(null);
@@ -46,7 +59,7 @@ export const useSlotAvailability = () => {
   useEffect(() => {
     fetchSlotCounts();
 
-    const channel = supabase
+    const registrationsChannel = supabase
       .channel('registrations-changes')
       .on(
         'postgres_changes',
@@ -57,10 +70,22 @@ export const useSlotAvailability = () => {
       )
       .subscribe();
 
+    const slotsChannel = supabase
+      .channel('slots-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'slots' },
+        () => {
+          fetchSlotCounts();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(registrationsChannel);
+      supabase.removeChannel(slotsChannel);
     };
   }, []);
 
-  return { availableSlots, loading, error, refetch: fetchSlotCounts };
+  return { availableSlots, allSlots, loading, error, refetch: fetchSlotCounts };
 };

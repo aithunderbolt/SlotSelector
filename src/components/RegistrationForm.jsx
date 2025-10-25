@@ -8,7 +8,7 @@ const RegistrationForm = () => {
     name: '',
     email: '',
     whatsapp_mobile: '',
-    time_slot: '',
+    slot_id: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -33,7 +33,7 @@ const RegistrationForm = () => {
     if (!phoneRegex.test(formData.whatsapp_mobile)) {
       return 'Valid WhatsApp mobile number is required';
     }
-    if (!formData.time_slot) {
+    if (!formData.slot_id) {
       return 'Please select a time slot';
     }
     return null;
@@ -78,15 +78,16 @@ const RegistrationForm = () => {
 
       if (error) throw error;
 
+      const selectedSlot = availableSlots.find(slot => slot.id === formData.slot_id);
       setSubmitStatus({
         type: 'success',
-        message: 'Registration successful! You have been registered for ' + formData.time_slot,
+        message: `Registration successful! You have been registered for ${selectedSlot?.display_name || 'the selected slot'}`,
       });
       setFormData({
         name: '',
         email: '',
         whatsapp_mobile: '',
-        time_slot: '',
+        slot_id: '',
       });
       refetch();
     } catch (err) {
@@ -170,19 +171,19 @@ const RegistrationForm = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="time_slot">Time Slot *</label>
+            <label htmlFor="slot_id">Time Slot *</label>
             <select
-              id="time_slot"
-              name="time_slot"
-              value={formData.time_slot}
+              id="slot_id"
+              name="slot_id"
+              value={formData.slot_id}
               onChange={handleChange}
               required
               disabled={submitting}
             >
               <option value="">Select a time slot</option>
               {availableSlots.map((slot) => (
-                <option key={slot} value={slot}>
-                  {slot}
+                <option key={slot.id} value={slot.id}>
+                  {slot.display_name}
                 </option>
               ))}
             </select>
