@@ -86,3 +86,13 @@ npm run dev
 
 - `VITE_SUPABASE_URL` - Your Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+- `VITE_ADMIN_USERNAME` - Admin username for dashboard access
+- `VITE_ADMIN_PASSWORD` - Admin password for dashboard access
+
+## Admin Dashboard
+
+Access the admin dashboard at `/admin` route. Login with credentials from your `.env` file to view:
+- Live registration data with real-time updates
+- Slot-wise registration counts
+- Filter registrations by time slot
+- Total registration statistics
