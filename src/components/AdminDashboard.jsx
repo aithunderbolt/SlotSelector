@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import * as XLSX from 'xlsx';
+import UserManagement from './UserManagement';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout, user }) => {
@@ -9,8 +10,10 @@ const AdminDashboard = ({ onLogout, user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot_id);
+  const [activeTab, setActiveTab] = useState('registrations');
 
   const isSlotAdmin = user.role === 'slot_admin';
+  const isSuperAdmin = user.role === 'super_admin';
   const userSlotId = user.assigned_slot_id;
 
   const fetchData = async () => {
@@ -187,18 +190,37 @@ const AdminDashboard = ({ onLogout, user }) => {
         <button onClick={onLogout} className="logout-btn">Logout</button>
       </div>
 
-      <div className="stats-container">
-        <div className="stat-card">
-          <h3>Total Registrations</h3>
-          <p className="stat-number">{isSlotAdmin ? (registrations.all || []).length : registrations.length}</p>
+      {isSuperAdmin && (
+        <div className="tabs">
+          <button
+            className={`tab ${activeTab === 'registrations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('registrations')}
+          >
+            Registrations
+          </button>
+          <button
+            className={`tab ${activeTab === 'users' ? 'active' : ''}`}
+            onClick={() => setActiveTab('users')}
+          >
+            User Management
+          </button>
         </div>
-        {slots.map((slot) => (
-          <div key={slot.id} className={`stat-card ${slotCounts[slot.id] >= 2 ? 'full' : ''}`}>
-            <h3>{slot.display_name}</h3>
-            <p className="stat-number">{slotCounts[slot.id]}/2</p>
+      )}
+
+      {activeTab === 'registrations' && (
+        <>
+          <div className="stats-container">
+            <div className="stat-card">
+              <h3>Total Registrations</h3>
+              <p className="stat-number">{isSlotAdmin ? (registrations.all || []).length : registrations.length}</p>
+            </div>
+            {slots.map((slot) => (
+              <div key={slot.id} className={`stat-card ${slotCounts[slot.id] >= 2 ? 'full' : ''}`}>
+                <h3>{slot.display_name}</h3>
+                <p className="stat-number">{slotCounts[slot.id]}/2</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
       {!isSlotAdmin && (
         <div className="filter-section">
@@ -239,9 +261,9 @@ const AdminDashboard = ({ onLogout, user }) => {
         </div>
       )}
 
-      {error && <div className="error-message">{error}</div>}
+          {error && <div className="error-message">{error}</div>}
 
-      <div className="table-container">
+          <div className="table-container">
         <table className="registrations-table">
           <thead>
             <tr>
@@ -270,7 +292,13 @@ const AdminDashboard = ({ onLogout, user }) => {
             )}
           </tbody>
         </table>
-      </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'users' && isSuperAdmin && (
+        <UserManagement />
+      )}
     </div>
   );
 };

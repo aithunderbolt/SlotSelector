@@ -30,7 +30,7 @@ A responsive registration form built with React and Vite, using Supabase as the 
      display_name TEXT NOT NULL UNIQUE,
      slot_order INTEGER NOT NULL UNIQUE,
      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
+   ); 
 
    -- Insert default slots (you can change display_name anytime)
    INSERT INTO slots (display_name, slot_order) VALUES
@@ -117,6 +117,15 @@ A responsive registration form built with React and Vite, using Supabase as the 
 
    CREATE POLICY "Enable read for all users" ON users
      FOR SELECT USING (true);
+
+   CREATE POLICY "Enable insert for all users" ON users
+     FOR INSERT WITH CHECK (true);
+
+   CREATE POLICY "Enable update for all users" ON users
+     FOR UPDATE USING (true);
+
+   CREATE POLICY "Enable delete for all users" ON users
+     FOR DELETE USING (true);
    ```
 
 5. **Optional - Add slot limit constraint:**
@@ -177,6 +186,8 @@ Access the admin dashboard at `/admin` route. Two types of admin access:
 - Can view all registrations across all slots
 - Can filter and download data for any slot or all slots
 - See statistics for all slots
+- **Can manage slot admin users** (create, edit, delete)
+- Can change slot admin usernames and passwords
 
 **Slot Admins:**
 - Username: `slot1admin` to `slot10admin` / Password: `slot1pass` to `slot10pass`
@@ -188,4 +199,20 @@ Features:
 - Live registration data with real-time updates
 - Role-based access control
 - Excel export functionality
+- User management for super admins
 - Responsive design
+
+## User Management (Super Admin Only)
+
+Super admins can manage slot admin users through the "User Management" tab in the admin dashboard:
+
+- **Add new slot admins:** Create new slot admin accounts with username, password, and assigned slot
+- **Edit existing admins:** Update username, password, or reassign to different slots
+- **Delete admins:** Remove slot admin accounts from the system
+- **View all slot admins:** See a list of all slot admin users and their assigned slots
+
+To access user management:
+1. Login as super admin
+2. Navigate to the "User Management" tab in the dashboard
+3. Use the "Add Slot Admin" button to create new users
+4. Click "Edit" or "Delete" on existing users to manage them
