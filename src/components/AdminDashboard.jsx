@@ -26,7 +26,14 @@ const AdminDashboard = ({ onLogout, user }) => {
       if (slotsError) throw slotsError;
       setSlots(slotsData);
 
-      // Fetch registrations with slot info
+      // Fetch all registrations for slot counts (both super admin and slot admin need this)
+      const { data: allRegistrations, error: allRegError } = await supabase
+        .from('registrations')
+        .select('id, slot_id');
+
+      if (allRegError) throw allRegError;
+
+      // Fetch detailed registrations with slot info
       let query = supabase
         .from('registrations')
         .select(`
@@ -45,7 +52,9 @@ const AdminDashboard = ({ onLogout, user }) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setRegistrations(data);
+      
+      // For slot admins, use all registrations for counts but filtered data for table
+      setRegistrations(isSlotAdmin ? { detailed: data, all: allRegistrations } : data);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -91,7 +100,11 @@ const AdminDashboard = ({ onLogout, user }) => {
     slots.forEach((slot) => {
       counts[slot.id] = 0;
     });
-    registrations.forEach((reg) => {
+    
+    // Use all registrations for counts if slot admin, otherwise use regular registrations
+    const dataForCounts = isSlotAdmin ? (registrations.all || []) : (Array.isArray(registrations) ? registrations : []);
+    
+    dataForCounts.forEach((reg) => {
       if (counts[reg.slot_id] !== undefined) {
         counts[reg.slot_id]++;
       }
@@ -101,9 +114,12 @@ const AdminDashboard = ({ onLogout, user }) => {
 
   const slotCounts = getSlotCounts();
 
+  // Use detailed registrations for slot admin, regular for super admin
+  const detailedRegistrations = isSlotAdmin ? (registrations.detailed || []) : (Array.isArray(registrations) ? registrations : []);
+  
   const filteredRegistrations = slotFilter === 'all'
-    ? registrations
-    : registrations.filter((reg) => reg.slot_id === slotFilter);
+    ? detailedRegistrations
+    : detailedRegistrations.filter((reg) => reg.slot_id === slotFilter);
 
   const getSlotDisplayName = (slotId) => {
     const slot = slots.find(s => s.id === slotId);
@@ -136,12 +152,14 @@ const AdminDashboard = ({ onLogout, user }) => {
   };
 
   const handleDownloadAll = () => {
-    downloadExcel(registrations, 'all_registrations.xlsx');
+    const dataToDownload = Array.isArray(registrations) ? registrations : (registrations.detailed || []);
+    downloadExcel(dataToDownload, 'all_registrations.xlsx');
   };
 
   const handleDownloadFiltered = () => {
     if (slotFilter === 'all') {
-      downloadExcel(registrations, 'all_registrations.xlsx');
+      const dataToDownload = Array.isArray(registrations) ? registrations : (registrations.detailed || []);
+      downloadExcel(dataToDownload, 'all_registrations.xlsx');
     } else {
       const slotName = getSlotDisplayName(slotFilter);
       downloadExcel(
@@ -171,21 +189,15 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       <div className="stats-container">
         <div className="stat-card">
-          <h3>{isSlotAdmin ? `${userSlotName} Registrations` : 'Total Registrations'}</h3>
-          <p className="stat-number">{registrations.length}</p>
+          <h3>Total Registrations</h3>
+          <p className="stat-number">{isSlotAdmin ? (registrations.all || []).length : registrations.length}</p>
         </div>
-        {!isSlotAdmin && slots.map((slot) => (
+        {slots.map((slot) => (
           <div key={slot.id} className={`stat-card ${slotCounts[slot.id] >= 2 ? 'full' : ''}`}>
             <h3>{slot.display_name}</h3>
             <p className="stat-number">{slotCounts[slot.id]}/2</p>
           </div>
         ))}
-        {isSlotAdmin && (
-          <div className={`stat-card ${slotCounts[userSlotId] >= 2 ? 'full' : ''}`}>
-            <h3>Capacity</h3>
-            <p className="stat-number">{slotCounts[userSlotId]}/2</p>
-          </div>
-        )}
       </div>
 
       {!isSlotAdmin && (
