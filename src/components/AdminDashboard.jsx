@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import * as XLSX from 'xlsx';
 import UserManagement from './UserManagement';
+import SlotManagement from './SlotManagement';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout, user }) => {
@@ -204,6 +205,12 @@ const AdminDashboard = ({ onLogout, user }) => {
           >
             User Management
           </button>
+          <button
+            className={`tab ${activeTab === 'slots' ? 'active' : ''}`}
+            onClick={() => setActiveTab('slots')}
+          >
+            Slot Management
+          </button>
         </div>
       )}
 
@@ -298,6 +305,10 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       {activeTab === 'users' && isSuperAdmin && (
         <UserManagement />
+      )}
+
+      {activeTab === 'slots' && isSuperAdmin && (
+        <SlotManagement />
       )}
     </div>
   );

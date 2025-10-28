@@ -1,0 +1,150 @@
+.slot-management {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.slot-management-header {
+  margin-bottom: 20px;
+}
+
+.slot-management-header h2 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.slot-info {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.slots-table-container {
+  overflow-x: auto;
+}
+
+.slots-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.slots-table th,
+.slots-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.slots-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.slots-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.slot-order-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #9C27B0;
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.slot-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.slot-name-input {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px 12px;
+  border: 2px solid #4CAF50;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.slot-name-input:focus {
+  outline: none;
+  border-color: #45a049;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-btn-inline,
+.save-btn-inline,
+.cancel-btn-inline {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.edit-btn-inline {
+  background: #2196F3;
+  color: white;
+}
+
+.edit-btn-inline:hover {
+  background: #1976D2;
+}
+
+.save-btn-inline {
+  background: #4CAF50;
+  color: white;
+}
+
+.save-btn-inline:hover {
+  background: #45a049;
+}
+
+.cancel-btn-inline {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.cancel-btn-inline:hover {
+  background: #e0e0e0;
+}
+
+@media (max-width: 768px) {
+  .slot-management {
+    padding: 15px;
+  }
+
+  .slots-table th,
+  .slots-table td {
+    padding: 10px 8px;
+    font-size: 14px;
+  }
+
+  .slot-name-input {
+    max-width: 100%;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .edit-btn-inline,
+  .save-btn-inline,
+  .cancel-btn-inline {
+    width: 100%;
+  }
+}

@@ -103,6 +103,9 @@ A responsive registration form built with React and Vite, using Supabase as the 
    CREATE POLICY "Enable read for all users" ON slots
      FOR SELECT USING (true);
 
+   CREATE POLICY "Enable update for all users" ON slots
+     FOR UPDATE USING (true);
+
    -- Registrations table policies
    ALTER TABLE registrations ENABLE ROW LEVEL SECURITY;
 
@@ -188,6 +191,7 @@ Access the admin dashboard at `/admin` route. Two types of admin access:
 - See statistics for all slots
 - **Can manage slot admin users** (create, edit, delete)
 - Can change slot admin usernames and passwords
+- **Can manage slot names** (edit display names)
 
 **Slot Admins:**
 - Username: `slot1admin` to `slot10admin` / Password: `slot1pass` to `slot10pass`
@@ -200,6 +204,7 @@ Features:
 - Role-based access control
 - Excel export functionality
 - User management for super admins
+- Slot management for super admins
 - Responsive design
 
 ## User Management (Super Admin Only)
@@ -216,3 +221,17 @@ To access user management:
 2. Navigate to the "User Management" tab in the dashboard
 3. Use the "Add Slot Admin" button to create new users
 4. Click "Edit" or "Delete" on existing users to manage them
+
+## Slot Management (Super Admin Only)
+
+Super admins can manage slot display names through the "Slot Management" tab:
+
+- **Edit slot names:** Change the display name of any slot (e.g., "Slot 1" to "Morning Session")
+- **Real-time updates:** Changes reflect immediately across the entire application
+- **Inline editing:** Click "Edit Name" to modify a slot name directly in the table
+
+To access slot management:
+1. Login as super admin
+2. Navigate to the "Slot Management" tab in the dashboard
+3. Click "Edit Name" on any slot to change its display name
+4. Click "Save" to apply changes or "Cancel" to discard
