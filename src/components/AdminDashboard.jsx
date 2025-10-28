@@ -5,6 +5,8 @@ import UserManagement from './UserManagement';
 import SlotManagement from './SlotManagement';
 import './AdminDashboard.css';
 
+const MAX_REGISTRATIONS_PER_SLOT = 15;
+
 const AdminDashboard = ({ onLogout, user }) => {
   const [registrations, setRegistrations] = useState([]);
   const [slots, setSlots] = useState([]);
@@ -222,9 +224,9 @@ const AdminDashboard = ({ onLogout, user }) => {
               <p className="stat-number">{isSlotAdmin ? (registrations.all || []).length : registrations.length}</p>
             </div>
             {slots.map((slot) => (
-              <div key={slot.id} className={`stat-card ${slotCounts[slot.id] >= 2 ? 'full' : ''}`}>
+              <div key={slot.id} className={`stat-card ${slotCounts[slot.id] >= MAX_REGISTRATIONS_PER_SLOT ? 'full' : ''}`}>
                 <h3>{slot.display_name}</h3>
-                <p className="stat-number">{slotCounts[slot.id]}/2</p>
+                <p className="stat-number">{slotCounts[slot.id]}/{MAX_REGISTRATIONS_PER_SLOT}</p>
               </div>
             ))}
           </div>
