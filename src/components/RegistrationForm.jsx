@@ -224,22 +224,23 @@ const RegistrationForm = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="slot_id">Time Slot *</label>
-            <select
-              id="slot_id"
-              name="slot_id"
-              value={formData.slot_id}
-              onChange={handleChange}
-              required
-              disabled={submitting}
-            >
-              <option value="">Select a time slot</option>
+            <label>Time Slot *</label>
+            <div className="radio-group">
               {availableSlots.map((slot) => (
-                <option key={slot.id} value={slot.id}>
-                  {slot.display_name}
-                </option>
+                <label key={slot.id} className="radio-option">
+                  <input
+                    type="radio"
+                    name="slot_id"
+                    value={slot.id}
+                    checked={formData.slot_id === slot.id}
+                    onChange={handleChange}
+                    required
+                    disabled={submitting}
+                  />
+                  <span className="radio-label">{slot.display_name}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           <button type="submit" disabled={submitting} className="submit-btn">

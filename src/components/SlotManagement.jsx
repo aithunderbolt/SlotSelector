@@ -95,11 +95,11 @@ const SlotManagement = () => {
                 </td>
                 <td>
                   {editingSlot === slot.id ? (
-                    <input
-                      type="text"
+                    <textarea
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       className="slot-name-input"
+                      rows="3"
                       autoFocus
                     />
                   ) : (
