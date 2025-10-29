@@ -132,11 +132,17 @@ const AdminDashboard = ({ onLogout, user }) => {
     return slot ? slot.display_name : 'Unknown Slot';
   };
 
+  const formatDateToDDMMYYYY = (dateStr) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}-${month}-${year}`;
+  };
+
   const downloadExcel = (dataToExport, filename) => {
     const exportData = dataToExport.map((reg) => ({
       Name: reg.name,
       "Father's Name": reg.fathers_name || '',
-      'Date of Birth': reg.date_of_birth || '',
+      'Date of Birth': formatDateToDDMMYYYY(reg.date_of_birth),
       Email: reg.email,
       'WhatsApp Mobile': reg.whatsapp_mobile,
       'Level of Tajweed': reg.tajweed_level || '',
@@ -301,7 +307,7 @@ const AdminDashboard = ({ onLogout, user }) => {
                 <tr key={reg.id}>
                   <td>{reg.name}</td>
                   <td>{reg.fathers_name || '-'}</td>
-                  <td>{reg.date_of_birth || '-'}</td>
+                  <td>{formatDateToDDMMYYYY(reg.date_of_birth) || '-'}</td>
                   <td>{reg.email}</td>
                   <td>{reg.whatsapp_mobile}</td>
                   <td>{reg.tajweed_level || '-'}</td>

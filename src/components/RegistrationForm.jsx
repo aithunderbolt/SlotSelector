@@ -24,6 +24,20 @@ const RegistrationForm = () => {
     });
   };
 
+  const formatDateToDisplay = (isoDate) => {
+    if (!isoDate) return '';
+    const [year, month, day] = isoDate.split('-');
+    return `${day}-${month}-${year}`;
+  };
+
+  const handleDobChange = (e) => {
+    // Store in yyyy-mm-dd format (ISO format for database)
+    setFormData({
+      ...formData,
+      date_of_birth: e.target.value,
+    });
+  };
+
   const validateForm = () => {
     if (!formData.name.trim()) {
       return 'Name is required';
@@ -174,10 +188,15 @@ const RegistrationForm = () => {
               id="date_of_birth"
               name="date_of_birth"
               value={formData.date_of_birth}
-              onChange={handleChange}
+              onChange={handleDobChange}
               required
               disabled={submitting}
             />
+            {formData.date_of_birth && (
+              <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+                Selected: {formatDateToDisplay(formData.date_of_birth)}
+              </small>
+            )}
           </div>
 
           <div className="form-group">
