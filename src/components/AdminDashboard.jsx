@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import * as XLSX from 'xlsx';
 import UserManagement from './UserManagement';
 import SlotManagement from './SlotManagement';
+import Settings from './Settings';
 import './AdminDashboard.css';
 
 const MAX_REGISTRATIONS_PER_SLOT = 15;
@@ -225,6 +226,12 @@ const AdminDashboard = ({ onLogout, user }) => {
           >
             Slot Management
           </button>
+          <button
+            className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            Settings
+          </button>
         </div>
       )}
 
@@ -328,6 +335,10 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       {activeTab === 'slots' && isSuperAdmin && (
         <SlotManagement />
+      )}
+
+      {activeTab === 'settings' && isSuperAdmin && (
+        <Settings />
       )}
     </div>
   );

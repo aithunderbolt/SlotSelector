@@ -235,3 +235,20 @@ To access slot management:
 2. Navigate to the "Slot Management" tab in the dashboard
 3. Click "Edit Name" on any slot to change its display name
 4. Click "Save" to apply changes or "Cancel" to discard
+
+## Settings Management (Super Admin Only)
+
+Super admins can manage application settings through the "Settings" tab:
+
+- **Registration Form Title:** Change the title displayed at the top of the registration form
+- **Real-time updates:** Changes reflect immediately on the registration form for all users
+- **Easy customization:** Personalize the form title to match your event or organization
+
+To access settings:
+1. Login as super admin
+2. Navigate to the "Settings" tab in the dashboard
+3. Update the "Registration Form Title" field
+4. Click "Save Settings" to apply changes
+
+**Setup Instructions:**
+Run the `create-settings-table.sql` file in your Supabase SQL Editor to create the settings table and enable this feature.

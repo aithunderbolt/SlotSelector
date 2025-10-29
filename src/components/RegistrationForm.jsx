@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useSlotAvailability } from '../hooks/useSlotAvailability';
 import './RegistrationForm.css';
@@ -15,7 +15,46 @@ const RegistrationForm = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [formTitle, setFormTitle] = useState('Tilawah Registration Form');
   const { availableSlots, loading, error, refetch } = useSlotAvailability();
+
+  useEffect(() => {
+    const fetchFormTitle = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('value')
+          .eq('key', 'form_title')
+          .single();
+
+        if (data && !error) {
+          setFormTitle(data.value);
+        }
+      } catch (err) {
+        console.error('Error fetching form title:', err);
+      }
+    };
+
+    fetchFormTitle();
+
+    // Subscribe to settings changes
+    const settingsChannel = supabase
+      .channel('form-settings')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'settings', filter: 'key=eq.form_title' },
+        (payload) => {
+          if (payload.new?.value) {
+            setFormTitle(payload.new.value);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(settingsChannel);
+    };
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -143,7 +182,7 @@ const RegistrationForm = () => {
     return (
       <div className="container">
         <div className="form-card">
-          <h1>Registration Form</h1>
+          <h1>{formTitle}</h1>
           <div className="error">All slots are currently full. Please check back later.</div>
         </div>
       </div>
@@ -153,7 +192,7 @@ const RegistrationForm = () => {
   return (
     <div className="container">
       <div className="form-card">
-        <h1>Tilawah Registration Form</h1>
+        <h1>{formTitle}</h1>
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
