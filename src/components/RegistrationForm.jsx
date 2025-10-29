@@ -156,6 +156,31 @@ const RegistrationForm = () => {
           </div>
 
           <div className="form-group">
+            <label htmlFor="fathers_name">Father's Name</label>
+            <input
+              type="text"
+              id="fathers_name"
+              name="fathers_name"
+              value={formData.fathers_name}
+              onChange={handleChange}
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="date_of_birth">Date of Birth *</label>
+            <input
+              type="date"
+              id="date_of_birth"
+              name="date_of_birth"
+              value={formData.date_of_birth}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="form-group">
             <label htmlFor="email">Email *</label>
             <input
               type="email"
@@ -177,31 +202,6 @@ const RegistrationForm = () => {
               value={formData.whatsapp_mobile}
               onChange={handleChange}
               placeholder="+1234567890"
-              required
-              disabled={submitting}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="fathers_name">Father's Name</label>
-            <input
-              type="text"
-              id="fathers_name"
-              name="fathers_name"
-              value={formData.fathers_name}
-              onChange={handleChange}
-              disabled={submitting}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="date_of_birth">Date of Birth *</label>
-            <input
-              type="date"
-              id="date_of_birth"
-              name="date_of_birth"
-              value={formData.date_of_birth}
-              onChange={handleChange}
               required
               disabled={submitting}
             />
