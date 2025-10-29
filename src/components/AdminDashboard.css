@@ -57,11 +57,28 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
   border-left: 4px solid #667eea;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card.selected {
+  border-left-width: 6px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
 }
 
 .stat-card.full {
   border-left-color: #dc3545;
   background: #fff5f5;
+}
+
+.stat-card.full.selected {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.1) 100%);
+  box-shadow: 0 4px 16px rgba(220, 53, 69, 0.3);
 }
 
 .stat-card h3 {

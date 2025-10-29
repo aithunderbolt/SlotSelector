@@ -225,12 +225,21 @@ const AdminDashboard = ({ onLogout, user }) => {
       {activeTab === 'registrations' && (
         <>
           <div className="stats-container">
-            <div className="stat-card">
+            <div 
+              className={`stat-card ${!isSlotAdmin && slotFilter === 'all' ? 'selected' : ''}`}
+              onClick={() => !isSlotAdmin && setSlotFilter('all')}
+              style={{ cursor: !isSlotAdmin ? 'pointer' : 'default' }}
+            >
               <h3>Total Registrations</h3>
               <p className="stat-number">{isSlotAdmin ? (registrations.all || []).length : registrations.length}</p>
             </div>
             {slots.map((slot) => (
-              <div key={slot.id} className={`stat-card ${slotCounts[slot.id] >= MAX_REGISTRATIONS_PER_SLOT ? 'full' : ''}`}>
+              <div 
+                key={slot.id} 
+                className={`stat-card ${slotCounts[slot.id] >= MAX_REGISTRATIONS_PER_SLOT ? 'full' : ''} ${!isSlotAdmin && slotFilter === slot.id ? 'selected' : ''}`}
+                onClick={() => !isSlotAdmin && setSlotFilter(slot.id)}
+                style={{ cursor: !isSlotAdmin ? 'pointer' : 'default' }}
+              >
                 <h3>{slot.display_name}</h3>
                 <p className="stat-number">{slotCounts[slot.id]}/{MAX_REGISTRATIONS_PER_SLOT}</p>
               </div>
@@ -240,17 +249,7 @@ const AdminDashboard = ({ onLogout, user }) => {
       {!isSlotAdmin && (
         <div className="filter-section">
           <div className="filter-controls">
-            <label htmlFor="slot-filter">Filter by Slot:</label>
-            <select
-              id="slot-filter"
-              value={slotFilter}
-              onChange={(e) => setSlotFilter(e.target.value)}
-            >
-              <option value="all">All Slots</option>
-              {slots.map((slot) => (
-                <option key={slot.id} value={slot.id}>{slot.display_name}</option>
-              ))}
-            </select>
+            <h3>Showing: {slotFilter === 'all' ? 'All Slots' : getSlotDisplayName(slotFilter)}</h3>
           </div>
           <div className="download-buttons">
             <button onClick={handleDownloadAll} className="download-btn">
