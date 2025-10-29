@@ -9,6 +9,9 @@ const RegistrationForm = () => {
     email: '',
     whatsapp_mobile: '',
     slot_id: '',
+    fathers_name: '',
+    date_of_birth: '',
+    tajweed_level: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -32,6 +35,12 @@ const RegistrationForm = () => {
     const phoneRegex = /^\+?[\d\s-]{10,}$/;
     if (!phoneRegex.test(formData.whatsapp_mobile)) {
       return 'Valid WhatsApp mobile number is required';
+    }
+    if (!formData.date_of_birth) {
+      return 'Date of Birth is required';
+    }
+    if (!formData.tajweed_level) {
+      return 'Please select your Tajweed level';
     }
     if (!formData.slot_id) {
       return 'Please select a time slot';
@@ -88,6 +97,9 @@ const RegistrationForm = () => {
         email: '',
         whatsapp_mobile: '',
         slot_id: '',
+        fathers_name: '',
+        date_of_birth: '',
+        tajweed_level: '',
       });
       refetch();
     } catch (err) {
@@ -168,6 +180,48 @@ const RegistrationForm = () => {
               required
               disabled={submitting}
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="fathers_name">Father's Name</label>
+            <input
+              type="text"
+              id="fathers_name"
+              name="fathers_name"
+              value={formData.fathers_name}
+              onChange={handleChange}
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="date_of_birth">Date of Birth *</label>
+            <input
+              type="date"
+              id="date_of_birth"
+              name="date_of_birth"
+              value={formData.date_of_birth}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="tajweed_level">Level of Tajweed *</label>
+            <select
+              id="tajweed_level"
+              name="tajweed_level"
+              value={formData.tajweed_level}
+              onChange={handleChange}
+              required
+              disabled={submitting}
+            >
+              <option value="">Select your level</option>
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
           </div>
 
           <div className="form-group">
