@@ -243,7 +243,7 @@ const RegistrationForm = () => {
           </div>
 
           <div className="form-group">
-            <label>Time Slot *</label>
+            <label>Time Slot (KSA Time) *</label>
             <div className="radio-group">
               {availableSlots.map((slot) => (
                 <label key={slot.id} className="radio-option">

@@ -10,6 +10,7 @@ const UserManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
+    name: '',
     username: '',
     password: '',
     role: 'slot_admin',
@@ -62,6 +63,7 @@ const UserManagement = () => {
     if (user) {
       setEditingUser(user);
       setFormData({
+        name: user.name || '',
         username: user.username,
         password: '',
         role: user.role,
@@ -70,6 +72,7 @@ const UserManagement = () => {
     } else {
       setEditingUser(null);
       setFormData({
+        name: '',
         username: '',
         password: '',
         role: 'slot_admin',
@@ -83,6 +86,7 @@ const UserManagement = () => {
     setShowModal(false);
     setEditingUser(null);
     setFormData({
+      name: '',
       username: '',
       password: '',
       role: 'slot_admin',
@@ -98,6 +102,7 @@ const UserManagement = () => {
       if (editingUser) {
         // Update existing user
         const updateData = {
+          name: formData.name || null,
           username: formData.username,
           role: formData.role,
           assigned_slot_id: formData.assigned_slot_id || null,
@@ -124,6 +129,7 @@ const UserManagement = () => {
         const { error } = await supabase
           .from('users')
           .insert([{
+            name: formData.name || null,
             username: formData.username,
             password: formData.password,
             role: formData.role,
@@ -180,6 +186,7 @@ const UserManagement = () => {
         <table className="users-table">
           <thead>
             <tr>
+              <th>Name</th>
               <th>Username</th>
               <th>Role</th>
               <th>Assigned Slot</th>
@@ -189,11 +196,12 @@ const UserManagement = () => {
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan="4" className="no-data">No slot admins found</td>
+                <td colSpan="5" className="no-data">No slot admins found</td>
               </tr>
             ) : (
               users.map((user) => (
                 <tr key={user.id}>
+                  <td>{user.name || '-'}</td>
                   <td>{user.username}</td>
                   <td><span className="role-badge">{user.role}</span></td>
                   <td>
@@ -227,6 +235,17 @@ const UserManagement = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>{editingUser ? 'Edit Slot Admin' : 'Add Slot Admin'}</h3>
             <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="name">Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Optional"
+                />
+              </div>
+
               <div className="form-group">
                 <label htmlFor="username">Username</label>
                 <input
