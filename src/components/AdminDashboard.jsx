@@ -135,8 +135,11 @@ const AdminDashboard = ({ onLogout, user }) => {
   const downloadExcel = (dataToExport, filename) => {
     const exportData = dataToExport.map((reg) => ({
       Name: reg.name,
+      "Father's Name": reg.fathers_name || '',
+      'Date of Birth': reg.date_of_birth || '',
       Email: reg.email,
       'WhatsApp Mobile': reg.whatsapp_mobile,
+      'Level of Tajweed': reg.tajweed_level || '',
       'Time Slot': reg.slots?.display_name || getSlotDisplayName(reg.slot_id),
       'Registered At': new Date(reg.created_at).toLocaleString(),
     }));
@@ -146,11 +149,14 @@ const AdminDashboard = ({ onLogout, user }) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
 
     const colWidths = [
-      { wch: 20 },
-      { wch: 30 },
-      { wch: 20 },
-      { wch: 15 },
-      { wch: 20 },
+      { wch: 20 }, // Name
+      { wch: 20 }, // Father's Name
+      { wch: 15 }, // Date of Birth
+      { wch: 30 }, // Email
+      { wch: 20 }, // WhatsApp Mobile
+      { wch: 15 }, // Level of Tajweed
+      { wch: 15 }, // Time Slot
+      { wch: 20 }, // Registered At
     ];
     worksheet['!cols'] = colWidths;
 
@@ -277,8 +283,11 @@ const AdminDashboard = ({ onLogout, user }) => {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Father's Name</th>
+              <th>Date of Birth</th>
               <th>Email</th>
               <th>WhatsApp Mobile</th>
+              <th>Level of Tajweed</th>
               <th>Time Slot</th>
               <th>Registered At</th>
             </tr>
@@ -286,14 +295,17 @@ const AdminDashboard = ({ onLogout, user }) => {
           <tbody>
             {filteredRegistrations.length === 0 ? (
               <tr>
-                <td colSpan="5" className="no-data">No registrations found</td>
+                <td colSpan="8" className="no-data">No registrations found</td>
               </tr>
             ) : (
               filteredRegistrations.map((reg) => (
                 <tr key={reg.id}>
                   <td>{reg.name}</td>
+                  <td>{reg.fathers_name || '-'}</td>
+                  <td>{reg.date_of_birth || '-'}</td>
                   <td>{reg.email}</td>
                   <td>{reg.whatsapp_mobile}</td>
+                  <td>{reg.tajweed_level || '-'}</td>
                   <td><span className="slot-badge">{reg.slots?.display_name || getSlotDisplayName(reg.slot_id)}</span></td>
                   <td>{new Date(reg.created_at).toLocaleString()}</td>
                 </tr>

@@ -201,7 +201,6 @@ const RegistrationForm = () => {
               name="whatsapp_mobile"
               value={formData.whatsapp_mobile}
               onChange={handleChange}
-              placeholder="+1234567890"
               required
               disabled={submitting}
             />
