@@ -4,9 +4,17 @@
 -- ============================================
 -- SLOTS TABLE POLICIES
 -- ============================================
+-- Allow super admins to insert new slots
+CREATE POLICY "Enable insert for all users" ON slots
+  FOR INSERT WITH CHECK (true);
+
 -- Allow super admins to update slot names
 CREATE POLICY "Enable update for all users" ON slots
   FOR UPDATE USING (true);
+
+-- Allow super admins to delete slots
+CREATE POLICY "Enable delete for all users" ON slots
+  FOR DELETE USING (true);
 
 -- ============================================
 -- USERS TABLE POLICIES
