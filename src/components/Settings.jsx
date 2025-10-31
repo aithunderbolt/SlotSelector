@@ -4,6 +4,7 @@ import './Settings.css';
 
 const Settings = () => {
   const [formTitle, setFormTitle] = useState('');
+  const [maxRegistrations, setMaxRegistrations] = useState('15');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -18,12 +19,16 @@ const Settings = () => {
       const { data, error } = await supabase
         .from('settings')
         .select('*')
-        .eq('key', 'form_title')
-        .single();
+        .in('key', ['form_title', 'max_registrations_per_slot']);
 
       if (error && error.code !== 'PGRST116') throw error;
       
-      setFormTitle(data?.value || 'Tilawah Registration Form');
+      const settings = data || [];
+      const titleSetting = settings.find(s => s.key === 'form_title');
+      const maxRegSetting = settings.find(s => s.key === 'max_registrations_per_slot');
+      
+      setFormTitle(titleSetting?.value || 'Tilawah Registration Form');
+      setMaxRegistrations(maxRegSetting?.value || '15');
     } catch (err) {
       console.error('Error fetching settings:', err);
       setMessage({ type: 'error', text: 'Failed to load settings' });
@@ -40,11 +45,22 @@ const Settings = () => {
       return;
     }
 
+    const maxRegNum = parseInt(maxRegistrations);
+    if (isNaN(maxRegNum) || maxRegNum < 1) {
+      setMessage({ type: 'error', text: 'Maximum registrations must be a positive number' });
+      return;
+    }
+
+    if (maxRegNum > 100) {
+      setMessage({ type: 'error', text: 'Maximum registrations cannot exceed 100' });
+      return;
+    }
+
     try {
       setSaving(true);
       setMessage(null);
 
-      const { error } = await supabase
+      const { error: titleError } = await supabase
         .from('settings')
         .upsert({ 
           key: 'form_title', 
@@ -53,7 +69,18 @@ const Settings = () => {
           onConflict: 'key'
         });
 
-      if (error) throw error;
+      if (titleError) throw titleError;
+
+      const { error: maxRegError } = await supabase
+        .from('settings')
+        .upsert({ 
+          key: 'max_registrations_per_slot', 
+          value: maxRegNum.toString() 
+        }, {
+          onConflict: 'key'
+        });
+
+      if (maxRegError) throw maxRegError;
 
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
     } catch (err) {
@@ -85,6 +112,21 @@ const Settings = () => {
             maxLength={100}
           />
           <small>This title will be displayed at the top of the registration form</small>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="maxRegistrations">Maximum Registrations Per Slot</label>
+          <input
+            type="number"
+            id="maxRegistrations"
+            value={maxRegistrations}
+            onChange={(e) => setMaxRegistrations(e.target.value)}
+            disabled={saving}
+            placeholder="Enter maximum registrations"
+            min="1"
+            max="100"
+          />
+          <small>Maximum number of students that can register for each time slot (1-100)</small>
         </div>
 
         <button type="submit" disabled={saving} className="save-btn">

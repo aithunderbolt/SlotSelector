@@ -29,6 +29,11 @@ INSERT INTO settings (key, value)
 VALUES ('form_title', 'Tilawah Registration Form')
 ON CONFLICT (key) DO NOTHING;
 
+-- Insert default max registrations per slot
+INSERT INTO settings (key, value) 
+VALUES ('max_registrations_per_slot', '15')
+ON CONFLICT (key) DO NOTHING;
+
 -- Create updated_at trigger
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

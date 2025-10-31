@@ -1,17 +1,28 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-const MAX_REGISTRATIONS_PER_SLOT = 15;
-
 export const useSlotAvailability = () => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [allSlots, setAllSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [maxRegistrations, setMaxRegistrations] = useState(15);
 
   const fetchSlotCounts = async () => {
     try {
       setLoading(true);
+      
+      // Fetch max registrations setting
+      const { data: settingData, error: settingError } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'max_registrations_per_slot')
+        .single();
+
+      if (settingError && settingError.code !== 'PGRST116') throw settingError;
+      
+      const maxReg = settingData?.value ? parseInt(settingData.value) : 15;
+      setMaxRegistrations(maxReg);
       
       // Fetch all slots
       const { data: slotsData, error: slotsError } = await supabase
@@ -43,7 +54,7 @@ export const useSlotAvailability = () => {
 
       // Filter available slots
       const available = slotsData.filter(
-        (slot) => slotCounts[slot.id] < MAX_REGISTRATIONS_PER_SLOT
+        (slot) => slotCounts[slot.id] < maxReg
       );
 
       setAvailableSlots(available);
@@ -81,11 +92,23 @@ export const useSlotAvailability = () => {
       )
       .subscribe();
 
+    const settingsChannel = supabase
+      .channel('settings-max-reg-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'settings', filter: 'key=eq.max_registrations_per_slot' },
+        () => {
+          fetchSlotCounts();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(registrationsChannel);
       supabase.removeChannel(slotsChannel);
+      supabase.removeChannel(settingsChannel);
     };
   }, []);
 
-  return { availableSlots, allSlots, loading, error, refetch: fetchSlotCounts };
+  return { availableSlots, allSlots, loading, error, maxRegistrations, refetch: fetchSlotCounts };
 };

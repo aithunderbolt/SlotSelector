@@ -6,8 +6,6 @@ import SlotManagement from './SlotManagement';
 import Settings from './Settings';
 import './AdminDashboard.css';
 
-const MAX_REGISTRATIONS_PER_SLOT = 15;
-
 const AdminDashboard = ({ onLogout, user }) => {
   const [registrations, setRegistrations] = useState([]);
   const [slots, setSlots] = useState([]);
@@ -15,6 +13,7 @@ const AdminDashboard = ({ onLogout, user }) => {
   const [error, setError] = useState(null);
   const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot_id);
   const [activeTab, setActiveTab] = useState('registrations');
+  const [maxRegistrations, setMaxRegistrations] = useState(15);
 
   const isSlotAdmin = user.role === 'slot_admin';
   const isSuperAdmin = user.role === 'super_admin';
@@ -23,6 +22,18 @@ const AdminDashboard = ({ onLogout, user }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
+
+      // Fetch max registrations setting
+      const { data: settingData, error: settingError } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'max_registrations_per_slot')
+        .single();
+
+      if (settingError && settingError.code !== 'PGRST116') throw settingError;
+      
+      const maxReg = settingData?.value ? parseInt(settingData.value) : 15;
+      setMaxRegistrations(maxReg);
 
       // Fetch slots
       const { data: slotsData, error: slotsError } = await supabase
@@ -96,9 +107,21 @@ const AdminDashboard = ({ onLogout, user }) => {
       )
       .subscribe();
 
+    const settingsChannel = supabase
+      .channel('admin-settings-max-reg')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'settings', filter: 'key=eq.max_registrations_per_slot' },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(registrationsChannel);
       supabase.removeChannel(slotsChannel);
+      supabase.removeChannel(settingsChannel);
     };
   }, []);
 
@@ -249,12 +272,12 @@ const AdminDashboard = ({ onLogout, user }) => {
             {slots.map((slot) => (
               <div 
                 key={slot.id} 
-                className={`stat-card ${slotCounts[slot.id] >= MAX_REGISTRATIONS_PER_SLOT ? 'full' : ''} ${!isSlotAdmin && slotFilter === slot.id ? 'selected' : ''}`}
+                className={`stat-card ${slotCounts[slot.id] >= maxRegistrations ? 'full' : ''} ${!isSlotAdmin && slotFilter === slot.id ? 'selected' : ''}`}
                 onClick={() => !isSlotAdmin && setSlotFilter(slot.id)}
                 style={{ cursor: !isSlotAdmin ? 'pointer' : 'default' }}
               >
                 <h3>{slot.display_name}</h3>
-                <p className="stat-number">{slotCounts[slot.id]}/{MAX_REGISTRATIONS_PER_SLOT}</p>
+                <p className="stat-number">{slotCounts[slot.id]}/{maxRegistrations}</p>
               </div>
             ))}
           </div>
