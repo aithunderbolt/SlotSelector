@@ -8,9 +8,11 @@ const SlotManagement = () => {
   const [error, setError] = useState(null);
   const [editingSlot, setEditingSlot] = useState(null);
   const [newName, setNewName] = useState('');
+  const [newMaxRegistrations, setNewMaxRegistrations] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSlotName, setNewSlotName] = useState('');
   const [newSlotOrder, setNewSlotOrder] = useState('');
+  const [newSlotMaxReg, setNewSlotMaxReg] = useState('15');
   const [deletingSlot, setDeletingSlot] = useState(null);
 
   const fetchSlots = async () => {
@@ -39,11 +41,13 @@ const SlotManagement = () => {
   const handleEdit = (slot) => {
     setEditingSlot(slot.id);
     setNewName(slot.display_name);
+    setNewMaxRegistrations(slot.max_registrations?.toString() || '15');
   };
 
   const handleCancel = () => {
     setEditingSlot(null);
     setNewName('');
+    setNewMaxRegistrations('');
   };
 
   const handleSave = async (slotId) => {
@@ -52,16 +56,31 @@ const SlotManagement = () => {
       return;
     }
 
+    const maxReg = parseInt(newMaxRegistrations);
+    if (isNaN(maxReg) || maxReg < 1) {
+      setError('Maximum registrations must be at least 1');
+      return;
+    }
+
+    if (maxReg > 100) {
+      setError('Maximum registrations cannot exceed 100');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('slots')
-        .update({ display_name: newName.trim() })
+        .update({ 
+          display_name: newName.trim(),
+          max_registrations: maxReg
+        })
         .eq('id', slotId);
 
       if (error) throw error;
 
       setEditingSlot(null);
       setNewName('');
+      setNewMaxRegistrations('');
       fetchSlots();
     } catch (err) {
       setError(err.message);
@@ -82,13 +101,25 @@ const SlotManagement = () => {
       return;
     }
 
+    const maxReg = parseInt(newSlotMaxReg);
+    if (isNaN(maxReg) || maxReg < 1) {
+      setError('Maximum registrations must be at least 1');
+      return;
+    }
+
+    if (maxReg > 100) {
+      setError('Maximum registrations cannot exceed 100');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('slots')
         .insert([
           {
             display_name: newSlotName.trim(),
-            slot_order: parseInt(newSlotOrder)
+            slot_order: parseInt(newSlotOrder),
+            max_registrations: maxReg
           }
         ]);
 
@@ -97,6 +128,7 @@ const SlotManagement = () => {
       setShowAddForm(false);
       setNewSlotName('');
       setNewSlotOrder('');
+      setNewSlotMaxReg('15');
       setError(null);
       fetchSlots();
     } catch (err) {
@@ -193,6 +225,20 @@ const SlotManagement = () => {
                 required
               />
             </div>
+            <div className="form-group">
+              <label htmlFor="slotMaxReg">Maximum Registrations:</label>
+              <input
+                type="number"
+                id="slotMaxReg"
+                value={newSlotMaxReg}
+                onChange={(e) => setNewSlotMaxReg(e.target.value)}
+                placeholder="e.g., 15"
+                min="1"
+                max="100"
+                required
+              />
+              <small>Maximum number of students for this slot (1-100)</small>
+            </div>
             <div className="form-actions">
               <button type="submit" className="submit-btn">Add Slot</button>
               <button 
@@ -201,6 +247,7 @@ const SlotManagement = () => {
                   setShowAddForm(false);
                   setNewSlotName('');
                   setNewSlotOrder('');
+                  setNewSlotMaxReg('15');
                   setError(null);
                 }} 
                 className="cancel-btn"
@@ -218,6 +265,7 @@ const SlotManagement = () => {
             <tr>
               <th>Slot Order</th>
               <th>Display Name</th>
+              <th>Max Registrations</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -238,6 +286,21 @@ const SlotManagement = () => {
                     />
                   ) : (
                     <span className="slot-name">{slot.display_name}</span>
+                  )}
+                </td>
+                <td>
+                  {editingSlot === slot.id ? (
+                    <input
+                      type="number"
+                      value={newMaxRegistrations}
+                      onChange={(e) => setNewMaxRegistrations(e.target.value)}
+                      className="slot-max-input"
+                      min="1"
+                      max="100"
+                      style={{ width: '80px' }}
+                    />
+                  ) : (
+                    <span className="slot-max-badge">{slot.max_registrations || 15}</span>
                   )}
                 </td>
                 <td>

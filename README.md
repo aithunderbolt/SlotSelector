@@ -5,10 +5,15 @@ A responsive registration form built with React and Vite, using Supabase as the 
 ## Features
 
 - Registration form with Name, Email, WhatsApp Mobile, and Time Slot selection
-- 10 time slots with a maximum of 13 registrations per slot
+- Configurable time slots with individual maximum registrations per slot
 - Real-time slot availability updates
 - Fully responsive design
 - Slots automatically hidden when full
+- Admin dashboard with role-based access control
+- User management for slot admins
+- Slot management with editable names and capacities
+- Settings management for form customization
+- Excel export functionality
 
 ## Setup
 
@@ -252,3 +257,27 @@ To access settings:
 
 **Setup Instructions:**
 Run the `create-settings-table.sql` file in your Supabase SQL Editor to create the settings table and enable this feature.
+
+## Per-Slot Maximum Registrations (Super Admin Only)
+
+Super admins can set individual maximum registration limits for each time slot:
+
+- **Individual Limits:** Each slot can have its own capacity (e.g., Slot A: 20, Slot B: 10, Slot C: 15)
+- **Flexible Capacity:** Different slots can accommodate different numbers of students
+- **Real-time Updates:** Changes take effect immediately across the entire system
+- **Easy Management:** Edit max registrations directly in the Slot Management tab
+
+To set per-slot maximum registrations:
+1. Login as super admin
+2. Navigate to the "Slot Management" tab
+3. Click "Edit" on any slot
+4. Change the "Maximum Registrations" field (1-100)
+5. Click "Save"
+
+**Setup Instructions:**
+Run the `add-max-registrations-to-slots.sql` file in your Supabase SQL Editor to add this feature.
+
+**Documentation:**
+- Quick Start: See `QUICK_START_PER_SLOT_MAX.md`
+- Full Documentation: See `PER_SLOT_MAX_REGISTRATIONS.md`
+- Migration Guide: See `MIGRATION_TO_PER_SLOT_MAX.md`

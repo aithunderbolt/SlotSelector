@@ -111,6 +111,30 @@
   border-color: #45a049;
 }
 
+.slot-max-input {
+  padding: 8px 12px;
+  border: 2px solid #4CAF50;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.slot-max-input:focus {
+  outline: none;
+  border-color: #45a049;
+}
+
+.slot-max-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #FF9800;
+  color: white;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -210,6 +234,13 @@
   font-size: 14px;
   font-family: inherit;
   transition: border-color 0.3s;
+}
+
+.add-slot-form small {
+  display: block;
+  margin-top: 4px;
+  color: #666;
+  font-size: 12px;
 }
 
 .add-slot-form input:focus,

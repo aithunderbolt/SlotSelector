@@ -6,25 +6,12 @@ export const useSlotAvailability = () => {
   const [allSlots, setAllSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [maxRegistrations, setMaxRegistrations] = useState(15);
 
   const fetchSlotCounts = async () => {
     try {
       setLoading(true);
       
-      // Fetch max registrations setting
-      const { data: settingData, error: settingError } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'max_registrations_per_slot')
-        .single();
-
-      if (settingError && settingError.code !== 'PGRST116') throw settingError;
-      
-      const maxReg = settingData?.value ? parseInt(settingData.value) : 15;
-      setMaxRegistrations(maxReg);
-      
-      // Fetch all slots
+      // Fetch all slots with their max_registrations
       const { data: slotsData, error: slotsError } = await supabase
         .from('slots')
         .select('*')
@@ -52,10 +39,11 @@ export const useSlotAvailability = () => {
         }
       });
 
-      // Filter available slots
-      const available = slotsData.filter(
-        (slot) => slotCounts[slot.id] < maxReg
-      );
+      // Filter available slots based on each slot's individual max_registrations
+      const available = slotsData.filter((slot) => {
+        const maxForSlot = slot.max_registrations || 15;
+        return slotCounts[slot.id] < maxForSlot;
+      });
 
       setAvailableSlots(available);
       setError(null);
@@ -92,23 +80,11 @@ export const useSlotAvailability = () => {
       )
       .subscribe();
 
-    const settingsChannel = supabase
-      .channel('settings-max-reg-changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'settings', filter: 'key=eq.max_registrations_per_slot' },
-        () => {
-          fetchSlotCounts();
-        }
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(registrationsChannel);
       supabase.removeChannel(slotsChannel);
-      supabase.removeChannel(settingsChannel);
     };
   }, []);
 
-  return { availableSlots, allSlots, loading, error, maxRegistrations, refetch: fetchSlotCounts };
+  return { availableSlots, allSlots, loading, error, refetch: fetchSlotCounts };
 };

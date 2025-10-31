@@ -13,7 +13,6 @@ const AdminDashboard = ({ onLogout, user }) => {
   const [error, setError] = useState(null);
   const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot_id);
   const [activeTab, setActiveTab] = useState('registrations');
-  const [maxRegistrations, setMaxRegistrations] = useState(15);
 
   const isSlotAdmin = user.role === 'slot_admin';
   const isSuperAdmin = user.role === 'super_admin';
@@ -23,19 +22,7 @@ const AdminDashboard = ({ onLogout, user }) => {
     try {
       setLoading(true);
 
-      // Fetch max registrations setting
-      const { data: settingData, error: settingError } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'max_registrations_per_slot')
-        .single();
-
-      if (settingError && settingError.code !== 'PGRST116') throw settingError;
-      
-      const maxReg = settingData?.value ? parseInt(settingData.value) : 15;
-      setMaxRegistrations(maxReg);
-
-      // Fetch slots
+      // Fetch slots with their max_registrations
       const { data: slotsData, error: slotsError } = await supabase
         .from('slots')
         .select('*')
@@ -107,21 +94,9 @@ const AdminDashboard = ({ onLogout, user }) => {
       )
       .subscribe();
 
-    const settingsChannel = supabase
-      .channel('admin-settings-max-reg')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'settings', filter: 'key=eq.max_registrations_per_slot' },
-        () => {
-          fetchData();
-        }
-      )
-      .subscribe();
-
     return () => {
       supabase.removeChannel(registrationsChannel);
       supabase.removeChannel(slotsChannel);
-      supabase.removeChannel(settingsChannel);
     };
   }, []);
 
@@ -269,17 +244,20 @@ const AdminDashboard = ({ onLogout, user }) => {
               <h3>Total Registrations</h3>
               <p className="stat-number">{isSlotAdmin ? (registrations.all || []).length : registrations.length}</p>
             </div>
-            {slots.map((slot) => (
-              <div 
-                key={slot.id} 
-                className={`stat-card ${slotCounts[slot.id] >= maxRegistrations ? 'full' : ''} ${!isSlotAdmin && slotFilter === slot.id ? 'selected' : ''}`}
-                onClick={() => !isSlotAdmin && setSlotFilter(slot.id)}
-                style={{ cursor: !isSlotAdmin ? 'pointer' : 'default' }}
-              >
-                <h3>{slot.display_name}</h3>
-                <p className="stat-number">{slotCounts[slot.id]}/{maxRegistrations}</p>
-              </div>
-            ))}
+            {slots.map((slot) => {
+              const maxForSlot = slot.max_registrations || 15;
+              return (
+                <div 
+                  key={slot.id} 
+                  className={`stat-card ${slotCounts[slot.id] >= maxForSlot ? 'full' : ''} ${!isSlotAdmin && slotFilter === slot.id ? 'selected' : ''}`}
+                  onClick={() => !isSlotAdmin && setSlotFilter(slot.id)}
+                  style={{ cursor: !isSlotAdmin ? 'pointer' : 'default' }}
+                >
+                  <h3>{slot.display_name}</h3>
+                  <p className="stat-number">{slotCounts[slot.id]}/{maxForSlot}</p>
+                </div>
+              );
+            })}
           </div>
 
       {!isSlotAdmin && (
