@@ -100,6 +100,13 @@ const AdminDashboard = ({ onLogout, user }) => {
     };
   }, []);
 
+  // Refetch data when switching to registrations tab
+  useEffect(() => {
+    if (activeTab === 'registrations') {
+      fetchData();
+    }
+  }, [activeTab]);
+
   const getSlotCounts = () => {
     const counts = {};
     slots.forEach((slot) => {
