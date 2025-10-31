@@ -42,12 +42,14 @@ const SlotManagement = () => {
     setEditingSlot(slot.id);
     setNewName(slot.display_name);
     setNewMaxRegistrations(slot.max_registrations?.toString() || '15');
+    setError(null); // Clear any previous errors
   };
 
   const handleCancel = () => {
     setEditingSlot(null);
     setNewName('');
     setNewMaxRegistrations('');
+    setError(null); // Clear any errors when canceling
   };
 
   const handleSave = async (slotId) => {
@@ -68,6 +70,21 @@ const SlotManagement = () => {
     }
 
     try {
+      // Check current registration count for this slot
+      const { data: registrations, error: countError } = await supabase
+        .from('registrations')
+        .select('id')
+        .eq('slot_id', slotId);
+
+      if (countError) throw countError;
+
+      const currentCount = registrations?.length || 0;
+
+      if (maxReg < currentCount) {
+        setError(`Cannot set maximum to ${maxReg}. This slot currently has ${currentCount} registration${currentCount !== 1 ? 's' : ''}. Please set a value of ${currentCount} or higher.`);
+        return;
+      }
+
       const { error } = await supabase
         .from('slots')
         .update({ 
@@ -81,6 +98,7 @@ const SlotManagement = () => {
       setEditingSlot(null);
       setNewName('');
       setNewMaxRegistrations('');
+      setError(null);
       fetchSlots();
     } catch (err) {
       setError(err.message);
