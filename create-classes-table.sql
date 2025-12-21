@@ -11,29 +11,18 @@ CREATE TABLE IF NOT EXISTS classes (
 -- Enable RLS
 ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 
--- Super admin can do everything
-CREATE POLICY "Super admins can manage classes"
-  ON classes
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role = 'super_admin'
-    )
-  );
+-- Allow all authenticated operations (app handles authorization)
+CREATE POLICY "Enable read for all users" ON classes
+  FOR SELECT USING (true);
 
--- Slot admins can view classes
-CREATE POLICY "Slot admins can view classes"
-  ON classes
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role = 'slot_admin'
-    )
-  );
+CREATE POLICY "Enable insert for all users" ON classes
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Enable update for all users" ON classes
+  FOR UPDATE USING (true);
+
+CREATE POLICY "Enable delete for all users" ON classes
+  FOR DELETE USING (true);
 
 -- Create index for faster queries
 CREATE INDEX idx_classes_name ON classes(name);

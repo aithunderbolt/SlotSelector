@@ -21,30 +21,18 @@ CREATE TABLE IF NOT EXISTS attendance (
 -- Enable RLS
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 
--- Super admin can view all attendance records
-CREATE POLICY "Super admins can view all attendance"
-  ON attendance
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role = 'super_admin'
-    )
-  );
+-- Allow all authenticated operations (app handles authorization)
+CREATE POLICY "Enable read for all users" ON attendance
+  FOR SELECT USING (true);
 
--- Slot admins can manage their own slot's attendance
-CREATE POLICY "Slot admins can manage their slot attendance"
-  ON attendance
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.role = 'slot_admin'
-      AND users.assigned_slot_id = attendance.slot_id
-    )
-  );
+CREATE POLICY "Enable insert for all users" ON attendance
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Enable update for all users" ON attendance
+  FOR UPDATE USING (true);
+
+CREATE POLICY "Enable delete for all users" ON attendance
+  FOR DELETE USING (true);
 
 -- Create indexes for faster queries
 CREATE INDEX idx_attendance_class_id ON attendance(class_id);
