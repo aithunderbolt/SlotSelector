@@ -204,7 +204,11 @@ const AttendanceAnalytics = () => {
                   <h4>{classItem.name}</h4>
                   <div className="total-stats">
                     <div className="stat-row">
-                      <span className="stat-label">Total Records:</span>
+                      <span className="stat-label">Total Slots:</span>
+                      <span className="stat-value">{slots.length}</span>
+                    </div>
+                    <div className="stat-row">
+                      <span className="stat-label">Attendance Entered:</span>
                       <span className="stat-value">{totals.record_count}</span>
                     </div>
                     <div className="stat-row">
