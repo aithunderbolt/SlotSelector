@@ -9,7 +9,6 @@ const AttendanceAnalytics = () => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const fetchData = async () => {
     try {
@@ -116,14 +115,9 @@ const AttendanceAnalytics = () => {
     return totals;
   };
 
-  // Get missing entries for selected date
+  // Get missing entries - slot admins who have never entered attendance for a class
   const getMissingEntries = () => {
     const missing = [];
-    
-    // Get records for selected date
-    const recordsForDate = attendanceRecords.filter(
-      (record) => record.attendance_date === selectedDate
-    );
 
     // Check each slot admin
     slotAdmins.forEach((admin) => {
@@ -131,11 +125,15 @@ const AttendanceAnalytics = () => {
       
       // Check each class
       classes.forEach((classItem) => {
-        const hasEntry = recordsForDate.some(
-          (record) => record.slot_id === admin.assigned_slot_id && record.class_id === classItem.id
+        // Check if this slot admin has EVER entered attendance for this class
+        const hasAnyEntry = attendanceRecords.some(
+          (record) => {
+            return record.slot_id === admin.assigned_slot_id && 
+                   record.class_id === classItem.id;
+          }
         );
 
-        if (!hasEntry) {
+        if (!hasAnyEntry) {
           missing.push({
             admin_username: admin.username,
             slot_name: slotName,
@@ -240,21 +238,12 @@ const AttendanceAnalytics = () => {
       {/* Missing Entries Section */}
       <div className="analytics-section">
         <div className="section-header">
-          <h3>Missing Attendance Entries</h3>
-          <div className="date-filter">
-            <label htmlFor="date-select">Select Date:</label>
-            <input
-              type="date"
-              id="date-select"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
-          </div>
+          <h3>Slot Admins Who Have Never Entered Attendance</h3>
         </div>
 
         {Object.keys(missingByAdmin).length === 0 ? (
           <div className="success-message">
-            ✓ All slot admins have entered attendance for all classes on {formatDate(selectedDate)}
+            ✓ All slot admins have entered attendance for all classes at least once
           </div>
         ) : (
           <div className="missing-entries">
@@ -265,7 +254,7 @@ const AttendanceAnalytics = () => {
                   <strong>{adminKey}</strong>
                 </div>
                 <div className="missing-classes">
-                  <span className="missing-label">Missing entries for:</span>
+                  <span className="missing-label">Never entered attendance for:</span>
                   <ul>
                     {missingClasses.map((className, idx) => (
                       <li key={idx}>{className}</li>
