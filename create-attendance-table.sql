@@ -1,0 +1,53 @@
+-- Create attendance table for slot admins to track attendance
+CREATE TABLE IF NOT EXISTS attendance (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  class_id UUID NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  slot_id UUID NOT NULL REFERENCES slots(id) ON DELETE CASCADE,
+  admin_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  attendance_date DATE NOT NULL,
+  total_students INTEGER NOT NULL DEFAULT 0,
+  students_present INTEGER NOT NULL DEFAULT 0,
+  students_absent INTEGER NOT NULL DEFAULT 0,
+  students_on_leave INTEGER NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT valid_student_counts CHECK (
+    students_present + students_absent + students_on_leave = total_students
+  ),
+  UNIQUE(class_id, slot_id, attendance_date)
+);
+
+-- Enable RLS
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+
+-- Super admin can view all attendance records
+CREATE POLICY "Super admins can view all attendance"
+  ON attendance
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.role = 'super_admin'
+    )
+  );
+
+-- Slot admins can manage their own slot's attendance
+CREATE POLICY "Slot admins can manage their slot attendance"
+  ON attendance
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.role = 'slot_admin'
+      AND users.assigned_slot_id = attendance.slot_id
+    )
+  );
+
+-- Create indexes for faster queries
+CREATE INDEX idx_attendance_class_id ON attendance(class_id);
+CREATE INDEX idx_attendance_slot_id ON attendance(slot_id);
+CREATE INDEX idx_attendance_date ON attendance(attendance_date);
+CREATE INDEX idx_attendance_admin_user ON attendance(admin_user_id);

@@ -4,6 +4,8 @@ import * as XLSX from 'xlsx';
 import UserManagement from './UserManagement';
 import SlotManagement from './SlotManagement';
 import Settings from './Settings';
+import ClassManagement from './ClassManagement';
+import AttendanceTracking from './AttendanceTracking';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout, user }) => {
@@ -211,34 +213,50 @@ const AdminDashboard = ({ onLogout, user }) => {
         <button onClick={onLogout} className="logout-btn">Logout</button>
       </div>
 
-      {isSuperAdmin && (
-        <div className="tabs">
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'registrations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('registrations')}
+        >
+          Registrations
+        </button>
+        {isSuperAdmin && (
+          <>
+            <button
+              className={`tab ${activeTab === 'users' ? 'active' : ''}`}
+              onClick={() => setActiveTab('users')}
+            >
+              User Management
+            </button>
+            <button
+              className={`tab ${activeTab === 'slots' ? 'active' : ''}`}
+              onClick={() => setActiveTab('slots')}
+            >
+              Slot Management
+            </button>
+            <button
+              className={`tab ${activeTab === 'classes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('classes')}
+            >
+              Class Management
+            </button>
+            <button
+              className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('settings')}
+            >
+              Settings
+            </button>
+          </>
+        )}
+        {isSlotAdmin && (
           <button
-            className={`tab ${activeTab === 'registrations' ? 'active' : ''}`}
-            onClick={() => setActiveTab('registrations')}
+            className={`tab ${activeTab === 'attendance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('attendance')}
           >
-            Registrations
+            Attendance
           </button>
-          <button
-            className={`tab ${activeTab === 'users' ? 'active' : ''}`}
-            onClick={() => setActiveTab('users')}
-          >
-            User Management
-          </button>
-          <button
-            className={`tab ${activeTab === 'slots' ? 'active' : ''}`}
-            onClick={() => setActiveTab('slots')}
-          >
-            Slot Management
-          </button>
-          <button
-            className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            Settings
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {activeTab === 'registrations' && (
         <>
@@ -347,6 +365,14 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       {activeTab === 'settings' && isSuperAdmin && (
         <Settings />
+      )}
+
+      {activeTab === 'classes' && isSuperAdmin && (
+        <ClassManagement />
+      )}
+
+      {activeTab === 'attendance' && isSlotAdmin && (
+        <AttendanceTracking user={user} />
       )}
     </div>
   );
