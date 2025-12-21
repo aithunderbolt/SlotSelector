@@ -105,13 +105,10 @@ const AttendanceTracking = ({ user }) => {
     }
 
     try {
-      // Get current user's ID
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
       const attendanceData = {
         class_id: formData.class_id,
         slot_id: user.assigned_slot_id,
-        admin_user_id: authUser.id,
+        admin_user_id: user.id,
         attendance_date: formData.attendance_date,
         total_students: parseInt(formData.total_students),
         students_present: parseInt(formData.students_present),
