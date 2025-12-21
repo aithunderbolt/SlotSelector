@@ -22,6 +22,17 @@ Execute these SQL files in Supabase SQL Editor in order:
 
 **To Delete**: Click "Delete" on any class card, confirm deletion
 
+## Super Admin: Viewing Analytics
+
+1. Login to admin dashboard
+2. Click "Attendance Analytics" tab
+3. View:
+   - **Class Totals**: See cumulative statistics for each class
+   - **Missing Entries**: Select a date to check which slot admins haven't entered data
+   - **All Records**: Browse complete attendance history
+
+**To Check Missing Entries**: Change the date in the date picker to see missing entries for that specific date
+
 ## Slot Admin: Recording Attendance
 
 1. Login to admin dashboard

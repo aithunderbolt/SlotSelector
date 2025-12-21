@@ -6,6 +6,7 @@ import SlotManagement from './SlotManagement';
 import Settings from './Settings';
 import ClassManagement from './ClassManagement';
 import AttendanceTracking from './AttendanceTracking';
+import AttendanceAnalytics from './AttendanceAnalytics';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout, user }) => {
@@ -241,6 +242,12 @@ const AdminDashboard = ({ onLogout, user }) => {
               Class Management
             </button>
             <button
+              className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
+              onClick={() => setActiveTab('analytics')}
+            >
+              Attendance Analytics
+            </button>
+            <button
               className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
               onClick={() => setActiveTab('settings')}
             >
@@ -369,6 +376,10 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       {activeTab === 'classes' && isSuperAdmin && (
         <ClassManagement />
+      )}
+
+      {activeTab === 'analytics' && isSuperAdmin && (
+        <AttendanceAnalytics />
       )}
 
       {activeTab === 'attendance' && isSlotAdmin && (

@@ -50,6 +50,24 @@ This creates:
 - Edit existing classes
 - Delete classes (will also delete associated attendance records)
 
+**Attendance Analytics Tab**:
+- View total attendance statistics for each class (all time):
+  - Total number of records
+  - Total students across all sessions
+  - Total students present
+  - Total students absent
+  - Total students on leave
+  - Overall attendance rate percentage
+- Track missing attendance entries:
+  - Select any date to check which slot admins haven't entered data
+  - Visual warning cards showing which slot admin is missing entries for which classes
+  - Success message when all entries are complete
+- View detailed attendance records table:
+  - All attendance records from all slot admins
+  - Sortable by date, class, and slot
+  - Color-coded attendance columns
+  - Attendance rate per session
+
 ### For Slot Admin
 
 **Attendance Tab**:
@@ -72,6 +90,11 @@ This creates:
 - New "Class Management" tab added between "Slot Management" and "Settings"
 - Classes displayed in a responsive grid with cards showing name, duration, and description
 - Edit and Delete buttons on each class card
+- New "Attendance Analytics" tab added after "Class Management"
+- Analytics dashboard shows:
+  - Total attendance statistics per class in card format
+  - Missing entries tracker with date selector
+  - Complete attendance records table
 
 ### Slot Admin Dashboard
 - New "Attendance" tab added next to "Registrations"
@@ -107,10 +130,13 @@ Both components use Supabase real-time subscriptions:
 
 1. `create-classes-table.sql` - Database migration for classes table
 2. `create-attendance-table.sql` - Database migration for attendance table
-3. `src/components/ClassManagement.jsx` - Super admin class management component
-4. `src/components/ClassManagement.css` - Styles for class management
-5. `src/components/AttendanceTracking.jsx` - Slot admin attendance tracking component
-6. `src/components/AttendanceTracking.css` - Styles for attendance tracking
+3. `fix-rls-policies.sql` - Fix for RLS policies to match app's authentication pattern
+4. `src/components/ClassManagement.jsx` - Super admin class management component
+5. `src/components/ClassManagement.css` - Styles for class management
+6. `src/components/AttendanceTracking.jsx` - Slot admin attendance tracking component
+7. `src/components/AttendanceTracking.css` - Styles for attendance tracking
+8. `src/components/AttendanceAnalytics.jsx` - Super admin analytics dashboard
+9. `src/components/AttendanceAnalytics.css` - Styles for analytics dashboard
 
 ## Files Modified
 
