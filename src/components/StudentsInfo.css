@@ -243,3 +243,90 @@
     justify-content: space-between;
   }
 }
+
+/* Attendance Section */
+.attendance-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.attendance-section h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.attendance-options {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 10px 15px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  transition: all 0.2s;
+  background: white;
+}
+
+.radio-label:hover {
+  border-color: #4CAF50;
+  background-color: #f8f9fa;
+}
+
+.radio-label input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #4CAF50;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  font-weight: 600;
+  color: #4CAF50;
+}
+
+.radio-label span {
+  font-size: 15px;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.radio-label input[type="radio"]:disabled {
+  cursor: not-allowed;
+}
+
+.radio-label:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Performance Section */
+.performance-section {
+  margin-bottom: 20px;
+}
+
+.performance-section h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .attendance-options {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .radio-label {
+    width: 100%;
+  }
+}

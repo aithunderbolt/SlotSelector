@@ -11,17 +11,29 @@ const StudentsInfo = ({ user }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [expandedStudents, setExpandedStudents] = useState({});
+  const [marksConfig, setMarksConfig] = useState({
+    homework: 1,
+    partner_recitation: 1,
+    jali: 1,
+    khafi: 1,
+    akhfa: 1,
+    tone: 1,
+    fluency: 1,
+    discipline: 1,
+    attendance_present: 1,
+    attendance_absent: 0,
+    attendance_on_leave: 0.5
+  });
 
   const performanceFields = [
-    { key: 'attendance', label: 'Attendance' },
-    { key: 'homework', label: 'Homework' },
-    { key: 'partner_recitation', label: 'Partner Recitation' },
-    { key: 'jali', label: 'Jali' },
-    { key: 'khafi', label: 'Khafi' },
-    { key: 'akhfa', label: 'Akhfa' },
-    { key: 'tone', label: 'Tone' },
-    { key: 'fluency', label: 'Fluency' },
-    { key: 'discipline', label: 'Discipline' }
+    { key: 'homework', label: 'Homework', type: 'checkbox' },
+    { key: 'partner_recitation', label: 'Partner Recitation', type: 'checkbox' },
+    { key: 'jali', label: 'Jali', type: 'checkbox' },
+    { key: 'khafi', label: 'Khafi', type: 'checkbox' },
+    { key: 'akhfa', label: 'Akhfa', type: 'checkbox' },
+    { key: 'tone', label: 'Tone', type: 'checkbox' },
+    { key: 'fluency', label: 'Fluency', type: 'checkbox' },
+    { key: 'discipline', label: 'Discipline', type: 'checkbox' }
   ];
 
   useEffect(() => {
@@ -37,6 +49,21 @@ const StudentsInfo = ({ user }) => {
   const fetchData = async () => {
     try {
       setLoading(true);
+
+      // Fetch marks configuration from settings
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('settings')
+        .select('*')
+        .like('key', 'student_info_marks_%');
+
+      if (settingsError) throw settingsError;
+
+      const marks = {};
+      (settingsData || []).forEach(setting => {
+        const key = setting.key.replace('student_info_marks_', '');
+        marks[key] = parseFloat(setting.value);
+      });
+      setMarksConfig(prev => ({ ...prev, ...marks }));
 
       // Fetch students for this slot
       const { data: studentsData, error: studentsError } = await supabase
@@ -102,9 +129,49 @@ const StudentsInfo = ({ user }) => {
     });
   };
 
+  const handleAttendanceChange = (studentId, value) => {
+    setStudentInfo(prev => {
+      const current = prev[studentId] || {};
+      return {
+        ...prev,
+        [studentId]: {
+          ...current,
+          attendance: value
+        }
+      };
+    });
+  };
+
   const calculateTotal = (studentId) => {
     const info = studentInfo[studentId] || {};
-    return performanceFields.reduce((sum, field) => sum + (info[field.key] || 0), 0);
+    let total = 0;
+    
+    // Add marks for checkbox fields
+    performanceFields.forEach(field => {
+      if (info[field.key] === 1) {
+        total += marksConfig[field.key] || 0;
+      }
+    });
+    
+    // Add marks for attendance
+    if (info.attendance === 'present') {
+      total += marksConfig.attendance_present || 0;
+    } else if (info.attendance === 'absent') {
+      total += marksConfig.attendance_absent || 0;
+    } else if (info.attendance === 'on_leave') {
+      total += marksConfig.attendance_on_leave || 0;
+    }
+    
+    return total.toFixed(1);
+  };
+
+  const getMaxMarks = () => {
+    let max = 0;
+    performanceFields.forEach(field => {
+      max += marksConfig[field.key] || 0;
+    });
+    max += marksConfig.attendance_present || 0; // Max attendance is present
+    return max.toFixed(1);
   };
 
   const handleSave = async (studentId) => {
@@ -122,7 +189,7 @@ const StudentsInfo = ({ user }) => {
         class_id: selectedClass,
         slot_id: user.assigned_slot_id,
         admin_user_id: user.id,
-        attendance: info.attendance || 0,
+        attendance: info.attendance || 'absent',
         homework: info.homework || 0,
         partner_recitation: info.partner_recitation || 0,
         jali: info.jali || 0,
@@ -203,7 +270,7 @@ const StudentsInfo = ({ user }) => {
           {students.map(student => {
             const isExpanded = expandedStudents[student.id];
             const total = calculateTotal(student.id);
-            const maxMarks = performanceFields.length;
+            const maxMarks = getMaxMarks();
 
             return (
               <div key={student.id} className="student-card">
@@ -222,21 +289,64 @@ const StudentsInfo = ({ user }) => {
 
                 {isExpanded && (
                   <div className="student-details">
-                    <div className="performance-grid">
-                      {performanceFields.map(field => (
-                        <div key={field.key} className="performance-item">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={(studentInfo[student.id]?.[field.key] || 0) === 1}
-                              onChange={() => handleCheckboxChange(student.id, field.key)}
-                              disabled={saving}
-                            />
-                            <span>{field.label}</span>
-                          </label>
-                        </div>
-                      ))}
+                    <div className="attendance-section">
+                      <h4>Attendance ({marksConfig.attendance_present} / {marksConfig.attendance_absent} / {marksConfig.attendance_on_leave} marks)</h4>
+                      <div className="attendance-options">
+                        <label className="radio-label">
+                          <input
+                            type="radio"
+                            name={`attendance-${student.id}`}
+                            value="present"
+                            checked={(studentInfo[student.id]?.attendance || 'absent') === 'present'}
+                            onChange={() => handleAttendanceChange(student.id, 'present')}
+                            disabled={saving}
+                          />
+                          <span>Present ({marksConfig.attendance_present})</span>
+                        </label>
+                        <label className="radio-label">
+                          <input
+                            type="radio"
+                            name={`attendance-${student.id}`}
+                            value="absent"
+                            checked={(studentInfo[student.id]?.attendance || 'absent') === 'absent'}
+                            onChange={() => handleAttendanceChange(student.id, 'absent')}
+                            disabled={saving}
+                          />
+                          <span>Absent ({marksConfig.attendance_absent})</span>
+                        </label>
+                        <label className="radio-label">
+                          <input
+                            type="radio"
+                            name={`attendance-${student.id}`}
+                            value="on_leave"
+                            checked={(studentInfo[student.id]?.attendance || 'absent') === 'on_leave'}
+                            onChange={() => handleAttendanceChange(student.id, 'on_leave')}
+                            disabled={saving}
+                          />
+                          <span>On Leave ({marksConfig.attendance_on_leave})</span>
+                        </label>
+                      </div>
                     </div>
+
+                    <div className="performance-section">
+                      <h4>Performance Indicators</h4>
+                      <div className="performance-grid">
+                        {performanceFields.map(field => (
+                          <div key={field.key} className="performance-item">
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={(studentInfo[student.id]?.[field.key] || 0) === 1}
+                                onChange={() => handleCheckboxChange(student.id, field.key)}
+                                disabled={saving}
+                              />
+                              <span>{field.label} ({marksConfig[field.key] || 0})</span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
                     <div className="student-actions">
                       <button
                         onClick={() => handleSave(student.id)}

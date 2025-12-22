@@ -9,6 +9,21 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  
+  // Student Info Marks Configuration
+  const [studentInfoMarks, setStudentInfoMarks] = useState({
+    homework: '1',
+    partner_recitation: '1',
+    jali: '1',
+    khafi: '1',
+    akhfa: '1',
+    tone: '1',
+    fluency: '1',
+    discipline: '1',
+    attendance_present: '1',
+    attendance_absent: '0',
+    attendance_on_leave: '0.5'
+  });
 
   useEffect(() => {
     fetchSettings();
@@ -19,8 +34,7 @@ const Settings = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('settings')
-        .select('*')
-        .in('key', ['form_title', 'max_registrations_per_slot', 'allow_student_info_entry']);
+        .select('*');
 
       if (error && error.code !== 'PGRST116') throw error;
       
@@ -32,6 +46,22 @@ const Settings = () => {
       setFormTitle(titleSetting?.value || 'Tilawah Registration Form');
       setMaxRegistrations(maxRegSetting?.value || '15');
       setAllowStudentInfo(studentInfoSetting?.value === 'true');
+      
+      // Load student info marks settings
+      const marksSettings = {
+        homework: settings.find(s => s.key === 'student_info_marks_homework')?.value || '1',
+        partner_recitation: settings.find(s => s.key === 'student_info_marks_partner_recitation')?.value || '1',
+        jali: settings.find(s => s.key === 'student_info_marks_jali')?.value || '1',
+        khafi: settings.find(s => s.key === 'student_info_marks_khafi')?.value || '1',
+        akhfa: settings.find(s => s.key === 'student_info_marks_akhfa')?.value || '1',
+        tone: settings.find(s => s.key === 'student_info_marks_tone')?.value || '1',
+        fluency: settings.find(s => s.key === 'student_info_marks_fluency')?.value || '1',
+        discipline: settings.find(s => s.key === 'student_info_marks_discipline')?.value || '1',
+        attendance_present: settings.find(s => s.key === 'student_info_marks_attendance_present')?.value || '1',
+        attendance_absent: settings.find(s => s.key === 'student_info_marks_attendance_absent')?.value || '0',
+        attendance_on_leave: settings.find(s => s.key === 'student_info_marks_attendance_on_leave')?.value || '0.5'
+      };
+      setStudentInfoMarks(marksSettings);
     } catch (err) {
       console.error('Error fetching settings:', err);
       setMessage({ type: 'error', text: 'Failed to load settings' });
@@ -59,42 +89,47 @@ const Settings = () => {
       return;
     }
 
+    // Validate student info marks
+    for (const [key, value] of Object.entries(studentInfoMarks)) {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue < 0) {
+        setMessage({ type: 'error', text: `Invalid mark value for ${key.replace(/_/g, ' ')}` });
+        return;
+      }
+      if (numValue > 100) {
+        setMessage({ type: 'error', text: `Mark value for ${key.replace(/_/g, ' ')} cannot exceed 100` });
+        return;
+      }
+    }
+
     try {
       setSaving(true);
       setMessage(null);
 
-      const { error: titleError } = await supabase
+      const settingsToSave = [
+        { key: 'form_title', value: formTitle.trim() },
+        { key: 'max_registrations_per_slot', value: maxRegNum.toString() },
+        { key: 'allow_student_info_entry', value: allowStudentInfo.toString() },
+        { key: 'student_info_marks_homework', value: studentInfoMarks.homework },
+        { key: 'student_info_marks_partner_recitation', value: studentInfoMarks.partner_recitation },
+        { key: 'student_info_marks_jali', value: studentInfoMarks.jali },
+        { key: 'student_info_marks_khafi', value: studentInfoMarks.khafi },
+        { key: 'student_info_marks_akhfa', value: studentInfoMarks.akhfa },
+        { key: 'student_info_marks_tone', value: studentInfoMarks.tone },
+        { key: 'student_info_marks_fluency', value: studentInfoMarks.fluency },
+        { key: 'student_info_marks_discipline', value: studentInfoMarks.discipline },
+        { key: 'student_info_marks_attendance_present', value: studentInfoMarks.attendance_present },
+        { key: 'student_info_marks_attendance_absent', value: studentInfoMarks.attendance_absent },
+        { key: 'student_info_marks_attendance_on_leave', value: studentInfoMarks.attendance_on_leave }
+      ];
+
+      const { error } = await supabase
         .from('settings')
-        .upsert({ 
-          key: 'form_title', 
-          value: formTitle.trim() 
-        }, {
+        .upsert(settingsToSave, {
           onConflict: 'key'
         });
 
-      if (titleError) throw titleError;
-
-      const { error: maxRegError } = await supabase
-        .from('settings')
-        .upsert({ 
-          key: 'max_registrations_per_slot', 
-          value: maxRegNum.toString() 
-        }, {
-          onConflict: 'key'
-        });
-
-      if (maxRegError) throw maxRegError;
-
-      const { error: studentInfoError } = await supabase
-        .from('settings')
-        .upsert({ 
-          key: 'allow_student_info_entry', 
-          value: allowStudentInfo.toString() 
-        }, {
-          onConflict: 'key'
-        });
-
-      if (studentInfoError) throw studentInfoError;
+      if (error) throw error;
 
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
     } catch (err) {
@@ -160,6 +195,177 @@ const Settings = () => {
           </label>
           <small>When enabled, slot admins can access the "Students Info" tab to enter performance data for each student</small>
         </div>
+
+        {allowStudentInfo && (
+          <div className="student-info-marks-section">
+            <h3>Student Information Marks Configuration</h3>
+            <p className="section-description">Configure the marks for each performance indicator</p>
+            
+            <div className="marks-grid">
+              <div className="marks-group">
+                <h4>Performance Indicators</h4>
+                
+                <div className="form-group-inline">
+                  <label htmlFor="marks_homework">Homework</label>
+                  <input
+                    type="number"
+                    id="marks_homework"
+                    value={studentInfoMarks.homework}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, homework: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_partner_recitation">Partner Recitation</label>
+                  <input
+                    type="number"
+                    id="marks_partner_recitation"
+                    value={studentInfoMarks.partner_recitation}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, partner_recitation: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_jali">Jali</label>
+                  <input
+                    type="number"
+                    id="marks_jali"
+                    value={studentInfoMarks.jali}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, jali: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_khafi">Khafi</label>
+                  <input
+                    type="number"
+                    id="marks_khafi"
+                    value={studentInfoMarks.khafi}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, khafi: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_akhfa">Akhfa</label>
+                  <input
+                    type="number"
+                    id="marks_akhfa"
+                    value={studentInfoMarks.akhfa}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, akhfa: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_tone">Tone</label>
+                  <input
+                    type="number"
+                    id="marks_tone"
+                    value={studentInfoMarks.tone}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, tone: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_fluency">Fluency</label>
+                  <input
+                    type="number"
+                    id="marks_fluency"
+                    value={studentInfoMarks.fluency}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, fluency: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_discipline">Discipline</label>
+                  <input
+                    type="number"
+                    id="marks_discipline"
+                    value={studentInfoMarks.discipline}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, discipline: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+              </div>
+
+              <div className="marks-group">
+                <h4>Attendance Marks</h4>
+                
+                <div className="form-group-inline">
+                  <label htmlFor="marks_attendance_present">Present</label>
+                  <input
+                    type="number"
+                    id="marks_attendance_present"
+                    value={studentInfoMarks.attendance_present}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, attendance_present: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_attendance_absent">Absent</label>
+                  <input
+                    type="number"
+                    id="marks_attendance_absent"
+                    value={studentInfoMarks.attendance_absent}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, attendance_absent: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="form-group-inline">
+                  <label htmlFor="marks_attendance_on_leave">On Leave</label>
+                  <input
+                    type="number"
+                    id="marks_attendance_on_leave"
+                    value={studentInfoMarks.attendance_on_leave}
+                    onChange={(e) => setStudentInfoMarks(prev => ({ ...prev, attendance_on_leave: e.target.value }))}
+                    disabled={saving}
+                    min="0"
+                    max="100"
+                    step="0.5"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <button type="submit" disabled={saving} className="save-btn">
           {saving ? 'Saving...' : 'Save Settings'}
