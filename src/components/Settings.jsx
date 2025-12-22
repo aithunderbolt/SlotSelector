@@ -5,6 +5,7 @@ import './Settings.css';
 const Settings = () => {
   const [formTitle, setFormTitle] = useState('');
   const [maxRegistrations, setMaxRegistrations] = useState('15');
+  const [allowStudentInfo, setAllowStudentInfo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -19,16 +20,18 @@ const Settings = () => {
       const { data, error } = await supabase
         .from('settings')
         .select('*')
-        .in('key', ['form_title', 'max_registrations_per_slot']);
+        .in('key', ['form_title', 'max_registrations_per_slot', 'allow_student_info_entry']);
 
       if (error && error.code !== 'PGRST116') throw error;
       
       const settings = data || [];
       const titleSetting = settings.find(s => s.key === 'form_title');
       const maxRegSetting = settings.find(s => s.key === 'max_registrations_per_slot');
+      const studentInfoSetting = settings.find(s => s.key === 'allow_student_info_entry');
       
       setFormTitle(titleSetting?.value || 'Tilawah Registration Form');
       setMaxRegistrations(maxRegSetting?.value || '15');
+      setAllowStudentInfo(studentInfoSetting?.value === 'true');
     } catch (err) {
       console.error('Error fetching settings:', err);
       setMessage({ type: 'error', text: 'Failed to load settings' });
@@ -82,6 +85,17 @@ const Settings = () => {
 
       if (maxRegError) throw maxRegError;
 
+      const { error: studentInfoError } = await supabase
+        .from('settings')
+        .upsert({ 
+          key: 'allow_student_info_entry', 
+          value: allowStudentInfo.toString() 
+        }, {
+          onConflict: 'key'
+        });
+
+      if (studentInfoError) throw studentInfoError;
+
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
     } catch (err) {
       console.error('Error saving settings:', err);
@@ -127,6 +141,24 @@ const Settings = () => {
             max="100"
           />
           <small>Maximum number of students that can register for each time slot (1-100)</small>
+        </div>
+
+        <div className="form-group">
+          <label className="switch-label">
+            <span>Allow Entering of Student Information</span>
+            <div className="switch-container">
+              <input
+                type="checkbox"
+                id="allowStudentInfo"
+                checked={allowStudentInfo}
+                onChange={(e) => setAllowStudentInfo(e.target.checked)}
+                disabled={saving}
+                className="switch-input"
+              />
+              <label htmlFor="allowStudentInfo" className="switch"></label>
+            </div>
+          </label>
+          <small>When enabled, slot admins can access the "Students Info" tab to enter performance data for each student</small>
         </div>
 
         <button type="submit" disabled={saving} className="save-btn">

@@ -7,6 +7,7 @@ import Settings from './Settings';
 import ClassManagement from './ClassManagement';
 import AttendanceTracking from './AttendanceTracking';
 import AttendanceAnalytics from './AttendanceAnalytics';
+import StudentsInfo from './StudentsInfo';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout, user }) => {
@@ -16,6 +17,7 @@ const AdminDashboard = ({ onLogout, user }) => {
   const [error, setError] = useState(null);
   const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot_id);
   const [activeTab, setActiveTab] = useState('registrations');
+  const [allowStudentInfo, setAllowStudentInfo] = useState(false);
 
   const isSlotAdmin = user.role === 'slot_admin';
   const isSuperAdmin = user.role === 'super_admin';
@@ -33,6 +35,19 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       if (slotsError) throw slotsError;
       setSlots(slotsData);
+
+      // Fetch student info setting
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'allow_student_info_entry')
+        .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') {
+        console.error('Error fetching settings:', settingsError);
+      } else {
+        setAllowStudentInfo(settingsData?.value === 'true');
+      }
 
       // Fetch all registrations for slot counts (both super admin and slot admin need this)
       const { data: allRegistrations, error: allRegError } = await supabase
@@ -256,12 +271,22 @@ const AdminDashboard = ({ onLogout, user }) => {
           </>
         )}
         {isSlotAdmin && (
-          <button
-            className={`tab ${activeTab === 'attendance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attendance')}
-          >
-            Attendance
-          </button>
+          <>
+            <button
+              className={`tab ${activeTab === 'attendance' ? 'active' : ''}`}
+              onClick={() => setActiveTab('attendance')}
+            >
+              Attendance
+            </button>
+            {allowStudentInfo && (
+              <button
+                className={`tab ${activeTab === 'studentsInfo' ? 'active' : ''}`}
+                onClick={() => setActiveTab('studentsInfo')}
+              >
+                Students Info
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -384,6 +409,10 @@ const AdminDashboard = ({ onLogout, user }) => {
 
       {activeTab === 'attendance' && isSlotAdmin && (
         <AttendanceTracking user={user} />
+      )}
+
+      {activeTab === 'studentsInfo' && isSlotAdmin && allowStudentInfo && (
+        <StudentsInfo user={user} />
       )}
     </div>
   );
