@@ -12,6 +12,7 @@ const AttendanceTracking = ({ user }) => {
   const [formData, setFormData] = useState({
     class_id: '',
     attendance_date: new Date().toISOString().split('T')[0],
+    attendance_time: '',
     total_students: '',
     students_present: '',
     students_absent: '',
@@ -110,6 +111,7 @@ const AttendanceTracking = ({ user }) => {
         slot_id: user.assigned_slot_id,
         admin_user_id: user.id,
         attendance_date: formData.attendance_date,
+        attendance_time: formData.attendance_time || null,
         total_students: parseInt(formData.total_students),
         students_present: parseInt(formData.students_present),
         students_absent: parseInt(formData.students_absent),
@@ -135,6 +137,7 @@ const AttendanceTracking = ({ user }) => {
       setFormData({
         class_id: '',
         attendance_date: new Date().toISOString().split('T')[0],
+        attendance_time: '',
         total_students: '',
         students_present: '',
         students_absent: '',
@@ -156,6 +159,7 @@ const AttendanceTracking = ({ user }) => {
     setFormData({
       class_id: record.class_id,
       attendance_date: record.attendance_date,
+      attendance_time: record.attendance_time || '',
       total_students: record.total_students.toString(),
       students_present: record.students_present.toString(),
       students_absent: record.students_absent.toString(),
@@ -190,6 +194,7 @@ const AttendanceTracking = ({ user }) => {
     setFormData({
       class_id: '',
       attendance_date: new Date().toISOString().split('T')[0],
+      attendance_time: '',
       total_students: '',
       students_present: '',
       students_absent: '',
@@ -257,6 +262,19 @@ const AttendanceTracking = ({ user }) => {
                   value={formData.attendance_date}
                   onChange={handleInputChange}
                   required
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="attendance_time">Time</label>
+                <input
+                  type="time"
+                  id="attendance_time"
+                  name="attendance_time"
+                  value={formData.attendance_time}
+                  onChange={handleInputChange}
                 />
               </div>
             </div>
