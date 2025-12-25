@@ -224,6 +224,18 @@
   color: #666;
 }
 
+.class-description-display {
+  margin-top: 8px;
+  padding: 10px;
+  background-color: #f0f8ff;
+  border-left: 3px solid #4CAF50;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #555;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 @media (max-width: 768px) {
   .form-row {
     grid-template-columns: 1fr;

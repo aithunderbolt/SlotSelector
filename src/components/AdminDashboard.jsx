@@ -19,6 +19,7 @@ const AdminDashboard = ({ onLogout, user }) => {
   const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot_id);
   const [activeTab, setActiveTab] = useState('registrations');
   const [allowStudentInfo, setAllowStudentInfo] = useState(false);
+  const [formTitle, setFormTitle] = useState('Tilawah Registration Form');
 
   const isSlotAdmin = user.role === 'slot_admin';
   const isSuperAdmin = user.role === 'super_admin';
@@ -40,14 +41,17 @@ const AdminDashboard = ({ onLogout, user }) => {
       // Fetch student info setting
       const { data: settingsData, error: settingsError } = await supabase
         .from('settings')
-        .select('value')
-        .eq('key', 'allow_student_info_entry')
-        .single();
+        .select('key, value')
+        .in('key', ['allow_student_info_entry', 'form_title']);
 
       if (settingsError && settingsError.code !== 'PGRST116') {
         console.error('Error fetching settings:', settingsError);
-      } else {
-        setAllowStudentInfo(settingsData?.value === 'true');
+      } else if (settingsData) {
+        const studentInfoSetting = settingsData.find(s => s.key === 'allow_student_info_entry');
+        const formTitleSetting = settingsData.find(s => s.key === 'form_title');
+        
+        setAllowStudentInfo(studentInfoSetting?.value === 'true');
+        setFormTitle(formTitleSetting?.value || 'Tilawah Registration Form');
       }
 
       // Fetch all registrations for slot counts (both super admin and slot admin need this)
@@ -223,6 +227,7 @@ const AdminDashboard = ({ onLogout, user }) => {
       <div className="admin-header">
         <div>
           <h1>Admin Dashboard</h1>
+          <div className="form-title-display">{formTitle}</div>
           <p className="user-info">
             Logged in as: <strong>{user.username}</strong> ({user.role === 'super_admin' ? 'Super Admin' : `Slot Admin - ${userSlotName}`})
           </p>

@@ -9,6 +9,7 @@ const AttendanceTracking = ({ user }) => {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [selectedClass, setSelectedClass] = useState(null);
   const [formData, setFormData] = useState({
     class_id: '',
     attendance_date: new Date().toISOString().split('T')[0],
@@ -83,6 +84,12 @@ const AttendanceTracking = ({ user }) => {
       ...prev,
       [name]: value
     }));
+    
+    // Update selected class when class_id changes
+    if (name === 'class_id') {
+      const classItem = classes.find(c => c.id === value);
+      setSelectedClass(classItem || null);
+    }
   };
 
   const validateCounts = () => {
@@ -146,6 +153,7 @@ const AttendanceTracking = ({ user }) => {
       });
       setShowForm(false);
       setEditingRecord(null);
+      setSelectedClass(null);
       setError(null);
       fetchData();
     } catch (err) {
@@ -156,6 +164,8 @@ const AttendanceTracking = ({ user }) => {
 
   const handleEdit = (record) => {
     setEditingRecord(record);
+    const classItem = classes.find(c => c.id === record.class_id);
+    setSelectedClass(classItem || null);
     setFormData({
       class_id: record.class_id,
       attendance_date: record.attendance_date,
@@ -191,6 +201,7 @@ const AttendanceTracking = ({ user }) => {
   const handleCancel = () => {
     setShowForm(false);
     setEditingRecord(null);
+    setSelectedClass(null);
     setFormData({
       class_id: '',
       attendance_date: new Date().toISOString().split('T')[0],
@@ -251,6 +262,11 @@ const AttendanceTracking = ({ user }) => {
                     </option>
                   ))}
                 </select>
+                {selectedClass && selectedClass.description && (
+                  <div className="class-description-display">
+                    {selectedClass.description}
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

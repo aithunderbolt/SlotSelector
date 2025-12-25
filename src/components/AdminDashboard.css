@@ -16,9 +16,18 @@
 }
 
 .admin-header h1 {
-  margin: 0 0 5px 0;
+  margin: 0 0 10px 0;
   color: #333;
   font-size: 28px;
+}
+
+.form-title-display {
+  display: inline-block;
+  margin: 10px 0 15px 0;
+  color: #667eea;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .user-info {
