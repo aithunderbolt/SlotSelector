@@ -136,14 +136,23 @@ const AttendanceTracking = ({ user }) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const deleteStoredFile = async (filePath) => {
+  const handleDeleteAttachment = async (record, fileIndex) => {
+    if (!confirm('Delete this file?')) return;
+
     try {
-      const { error } = await supabase.storage
-        .from('attendance-files')
-        .remove([filePath]);
+      const attachments = record.attachments || [];
+      const updatedAttachments = attachments.filter((_, i) => i !== fileIndex);
+      
+      const { error } = await supabase
+        .from('attendance')
+        .update({ attachments: updatedAttachments })
+        .eq('id', record.id);
+
       if (error) throw error;
+      fetchData();
     } catch (err) {
-      console.error('Error deleting file:', err);
+      setError(err.message);
+      console.error('Error deleting attachment:', err);
     }
   };
 
@@ -151,15 +160,25 @@ const AttendanceTracking = ({ user }) => {
     const uploadedFiles = [];
     
     for (const file of attachments) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${attendanceId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      const { data, error } = await supabase.storage
-        .from('attendance-files')
-        .upload(fileName, file);
-
-      if (error) throw error;
-      uploadedFiles.push({ name: file.name, path: data.path });
+      try {
+        // Convert file to base64
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
+        uploadedFiles.push({ 
+          name: file.name, 
+          data: base64,
+          size: file.size,
+          type: file.type
+        });
+      } catch (err) {
+        console.error('Failed to process file:', file.name, err);
+        throw new Error(`Failed to process ${file.name}: ${err.message}`);
+      }
     }
     
     return uploadedFiles;
@@ -175,6 +194,22 @@ const AttendanceTracking = ({ user }) => {
     if (attachments.length === 0 && !editingRecord) {
       setError('At least one file attachment is required');
       return;
+    }
+
+    // Check for existing record when creating new
+    if (!editingRecord) {
+      const { data: existingRecord } = await supabase
+        .from('attendance')
+        .select('id')
+        .eq('class_id', formData.class_id)
+        .eq('slot_id', user.assigned_slot_id)
+        .eq('attendance_date', formData.attendance_date)
+        .maybeSingle();
+
+      if (existingRecord) {
+        setError('Attendance record already exists for this class and date. Please edit the existing record instead.');
+        return;
+      }
     }
 
     try {
@@ -195,8 +230,13 @@ const AttendanceTracking = ({ user }) => {
         let updatedAttachments = editingRecord.attachments || [];
         
         if (attachments.length > 0) {
-          const uploadedFiles = await uploadFiles(editingRecord.id);
-          updatedAttachments = [...updatedAttachments, ...uploadedFiles];
+          try {
+            const uploadedFiles = await uploadFiles(editingRecord.id);
+            updatedAttachments = [...updatedAttachments, ...uploadedFiles];
+          } catch (uploadErr) {
+            setError(`File processing failed: ${uploadErr.message}`);
+            return;
+          }
         }
 
         const { error } = await supabase
@@ -210,22 +250,23 @@ const AttendanceTracking = ({ user }) => {
 
         if (error) throw error;
       } else {
+        // Process files first
+        let uploadedFiles = [];
+        try {
+          uploadedFiles = await uploadFiles(null);
+        } catch (uploadErr) {
+          setError(`File processing failed: ${uploadErr.message}`);
+          return;
+        }
+        
+        // Create record with attachments
         const { data: newRecord, error: insertError } = await supabase
           .from('attendance')
-          .insert([attendanceData])
+          .insert([{ ...attendanceData, attachments: uploadedFiles }])
           .select()
           .single();
 
         if (insertError) throw insertError;
-
-        const uploadedFiles = await uploadFiles(newRecord.id);
-        
-        const { error: updateError } = await supabase
-          .from('attendance')
-          .update({ attachments: uploadedFiles })
-          .eq('id', newRecord.id);
-
-        if (updateError) throw updateError;
       }
 
       setFormData({
@@ -246,7 +287,7 @@ const AttendanceTracking = ({ user }) => {
       setUploadError(null);
       fetchData();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to save attendance record');
       console.error('Error saving attendance:', err);
     }
   };
@@ -267,30 +308,6 @@ const AttendanceTracking = ({ user }) => {
     });
     setAttachments([]);
     setShowForm(true);
-  };
-
-  const handleDeleteAttachment = async (record, fileIndex) => {
-    if (!confirm('Delete this file?')) return;
-
-    try {
-      const attachments = record.attachments || [];
-      const fileToDelete = attachments[fileIndex];
-      
-      await deleteStoredFile(fileToDelete.path);
-      
-      const updatedAttachments = attachments.filter((_, i) => i !== fileIndex);
-      
-      const { error } = await supabase
-        .from('attendance')
-        .update({ attachments: updatedAttachments })
-        .eq('id', record.id);
-
-      if (error) throw error;
-      fetchData();
-    } catch (err) {
-      setError(err.message);
-      console.error('Error deleting attachment:', err);
-    }
   };
 
   const handleDelete = async (recordId) => {
@@ -510,7 +527,10 @@ const AttendanceTracking = ({ user }) => {
                   <strong>Existing files:</strong>
                   {editingRecord.attachments.map((file, index) => (
                     <div key={index} className="attachment-item">
-                      <span>{file.name}</span>
+                      <div className="attachment-preview-img">
+                        <img src={file.data} alt={file.name} style={{maxWidth: '100px', maxHeight: '100px'}} />
+                        <span>{file.name} ({Math.round(file.size / 1024)}KB)</span>
+                      </div>
                       <button 
                         type="button" 
                         onClick={() => handleDeleteAttachment(editingRecord, index)} 
@@ -566,7 +586,18 @@ const AttendanceTracking = ({ user }) => {
                     <td className="on-leave">{record.students_on_leave}</td>
                     <td className="files-cell">
                       {record.attachments && record.attachments.length > 0 ? (
-                        <span>{record.attachments.length} file(s)</span>
+                        <div className="files-preview">
+                          {record.attachments.map((file, idx) => (
+                            <img 
+                              key={idx}
+                              src={file.data} 
+                              alt={file.name}
+                              title={file.name}
+                              style={{width: '40px', height: '40px', objectFit: 'cover', marginRight: '4px', borderRadius: '4px', cursor: 'pointer'}}
+                              onClick={() => window.open(file.data, '_blank')}
+                            />
+                          ))}
+                        </div>
                       ) : (
                         '-'
                       )}

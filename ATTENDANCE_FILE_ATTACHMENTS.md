@@ -23,11 +23,16 @@ Run `add-attendance-attachments.sql` to:
 - Preview selected files before submission
 
 ## Storage Structure
-Files stored in Supabase Storage bucket `attendance-files`:
-```
-attendance-files/
-  {attendance_id}/
-    {timestamp}_{random}.{ext}
+Files stored as base64 in the database `attachments` JSONB column:
+```json
+[
+  {
+    "name": "photo.jpg",
+    "data": "data:image/jpeg;base64,...",
+    "size": 150000,
+    "type": "image/jpeg"
+  }
+]
 ```
 
 ## Implementation
