@@ -22,6 +22,8 @@ const AttendanceTracking = ({ user }) => {
   });
   const [attachments, setAttachments] = useState([]);
   const [uploadError, setUploadError] = useState(null);
+  const [attachmentPreviews, setAttachmentPreviews] = useState([]);
+  const [viewingImage, setViewingImage] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -129,10 +131,16 @@ const AttendanceTracking = ({ user }) => {
       }
     }
 
+    // Create preview URLs for the new files
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setAttachmentPreviews(prev => [...prev, ...newPreviews]);
     setAttachments(prev => [...prev, ...files]);
   };
 
   const removeAttachment = (index) => {
+    // Revoke the preview URL to free memory
+    URL.revokeObjectURL(attachmentPreviews[index]);
+    setAttachmentPreviews(prev => prev.filter((_, i) => i !== index));
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -297,6 +305,7 @@ const AttendanceTracking = ({ user }) => {
         notes: ''
       });
       setAttachments([]);
+      setAttachmentPreviews([]);
       setShowForm(false);
       setEditingRecord(null);
       setSelectedClass(null);
@@ -324,6 +333,7 @@ const AttendanceTracking = ({ user }) => {
       notes: record.notes || ''
     });
     setAttachments([]);
+    setAttachmentPreviews([]);
     setShowForm(true);
   };
 
@@ -347,6 +357,9 @@ const AttendanceTracking = ({ user }) => {
   };
 
   const handleCancel = () => {
+    // Clean up preview URLs
+    attachmentPreviews.forEach(url => URL.revokeObjectURL(url));
+    
     setShowForm(false);
     setEditingRecord(null);
     setSelectedClass(null);
@@ -361,6 +374,7 @@ const AttendanceTracking = ({ user }) => {
       notes: ''
     });
     setAttachments([]);
+    setAttachmentPreviews([]);
     setError(null);
     setUploadError(null);
   };
@@ -530,7 +544,10 @@ const AttendanceTracking = ({ user }) => {
                 <div className="attachment-preview">
                   {attachments.map((file, index) => (
                     <div key={index} className="attachment-item">
-                      <span>{file.name} ({Math.round(file.size / 1024)}KB)</span>
+                      <div className="attachment-preview-img">
+                        <img src={attachmentPreviews[index]} alt={file.name} style={{maxWidth: '100px', maxHeight: '100px', objectFit: 'cover', borderRadius: '4px'}} />
+                        <span>{file.name} ({Math.round(file.size / 1024)}KB)</span>
+                      </div>
                       <button type="button" onClick={() => removeAttachment(index)} className="remove-file-btn">
                         ×
                       </button>
@@ -609,9 +626,9 @@ const AttendanceTracking = ({ user }) => {
                               key={idx}
                               src={file.data} 
                               alt={file.name}
-                              title={file.name}
-                              style={{width: '40px', height: '40px', objectFit: 'cover', marginRight: '4px', borderRadius: '4px', cursor: 'pointer'}}
-                              onClick={() => window.open(file.data, '_blank')}
+                              title={`Click to view ${file.name}`}
+                              style={{width: '40px', height: '40px', objectFit: 'cover', marginRight: '4px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #dee2e6'}}
+                              onClick={() => setViewingImage(file)}
                             />
                           ))}
                         </div>
@@ -637,6 +654,19 @@ const AttendanceTracking = ({ user }) => {
           </div>
         )}
       </div>
+
+      {viewingImage && (
+        <div className="image-modal" onClick={() => setViewingImage(null)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="image-modal-close" onClick={() => setViewingImage(null)}>×</button>
+            <img src={viewingImage.data} alt={viewingImage.name} />
+            <div className="image-modal-info">
+              <strong>{viewingImage.name}</strong>
+              <span>{Math.round(viewingImage.size / 1024)}KB</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
