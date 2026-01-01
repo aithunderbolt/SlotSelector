@@ -1,4 +1,7 @@
--- Add file attachments column to attendance table (if not exists)
+-- Add file attachments column to attendance table
+-- Files are stored as base64 in JSONB format
+-- Structure: [{"name": "file.jpg", "data": "data:image/jpeg;base64,...", "size": 150000, "type": "image/jpeg"}]
+
 DO $$ 
 BEGIN
   IF NOT EXISTS (
@@ -9,28 +12,7 @@ BEGIN
   END IF;
 END $$;
 
--- Drop old policies if they exist
-DROP POLICY IF EXISTS "Authenticated users can upload attendance files" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can view attendance files" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can delete attendance files" ON storage.objects;
-DROP POLICY IF EXISTS "Anyone can upload attendance files" ON storage.objects;
-DROP POLICY IF EXISTS "Anyone can view attendance files" ON storage.objects;
-DROP POLICY IF EXISTS "Anyone can delete attendance files" ON storage.objects;
-
--- Create storage bucket for attendance files (public for easier access)
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('attendance-files', 'attendance-files', true)
-ON CONFLICT (id) DO NOTHING;
-
--- Storage policies for attendance files
-CREATE POLICY "Anyone can upload attendance files"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'attendance-files');
-
-CREATE POLICY "Anyone can view attendance files"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'attendance-files');
-
-CREATE POLICY "Anyone can delete attendance files"
-ON storage.objects FOR DELETE
-USING (bucket_id = 'attendance-files');
+-- Files modified to implement this functionality:
+-- 1. src/components/AttendanceTracking.jsx (main implementation)
+-- 2. src/components/AttendanceTracking.css (styling for file attachments)
+-- 3. add-attendance-attachments.sql (this file - database migration)
