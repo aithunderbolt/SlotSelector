@@ -149,6 +149,12 @@ const AttendanceTracking = ({ user }) => {
         .eq('id', record.id);
 
       if (error) throw error;
+      
+      // Update the editing record state to reflect the deletion
+      if (editingRecord && editingRecord.id === record.id) {
+        setEditingRecord({ ...editingRecord, attachments: updatedAttachments });
+      }
+      
       fetchData();
     } catch (err) {
       setError(err.message);
@@ -191,9 +197,20 @@ const AttendanceTracking = ({ user }) => {
       return;
     }
 
-    if (attachments.length === 0 && !editingRecord) {
-      setError('At least one file attachment is required');
-      return;
+    // Validate file attachments for both create and edit modes
+    if (!editingRecord) {
+      // Creating new record - must have attachments
+      if (attachments.length === 0) {
+        setError('At least one file attachment is required');
+        return;
+      }
+    } else {
+      // Editing existing record - must have at least 1 file total (existing + new)
+      const totalFiles = (editingRecord.attachments?.length || 0) + attachments.length;
+      if (totalFiles === 0) {
+        setError('At least one file attachment is required. Cannot save without any files.');
+        return;
+      }
     }
 
     // Check for existing record when creating new
