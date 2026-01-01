@@ -20,6 +20,8 @@ const AttendanceTracking = ({ user }) => {
     students_on_leave: '',
     notes: ''
   });
+  const [attachments, setAttachments] = useState([]);
+  const [uploadError, setUploadError] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -105,10 +107,73 @@ const AttendanceTracking = ({ user }) => {
     return true;
   };
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setUploadError(null);
+
+    // Validate file count
+    if (files.length + attachments.length > 3) {
+      setUploadError('Maximum 3 files allowed');
+      return;
+    }
+
+    // Validate each file
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        setUploadError('Only image files (jpg, png, etc.) are allowed');
+        return;
+      }
+      if (file.size > 200 * 1024) {
+        setUploadError(`File ${file.name} exceeds 200KB limit`);
+        return;
+      }
+    }
+
+    setAttachments(prev => [...prev, ...files]);
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const deleteStoredFile = async (filePath) => {
+    try {
+      const { error } = await supabase.storage
+        .from('attendance-files')
+        .remove([filePath]);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error deleting file:', err);
+    }
+  };
+
+  const uploadFiles = async (attendanceId) => {
+    const uploadedFiles = [];
+    
+    for (const file of attachments) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${attendanceId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('attendance-files')
+        .upload(fileName, file);
+
+      if (error) throw error;
+      uploadedFiles.push({ name: file.name, path: data.path });
+    }
+    
+    return uploadedFiles;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateCounts()) {
+      return;
+    }
+
+    if (attachments.length === 0 && !editingRecord) {
+      setError('At least one file attachment is required');
       return;
     }
 
@@ -127,18 +192,40 @@ const AttendanceTracking = ({ user }) => {
       };
 
       if (editingRecord) {
+        let updatedAttachments = editingRecord.attachments || [];
+        
+        if (attachments.length > 0) {
+          const uploadedFiles = await uploadFiles(editingRecord.id);
+          updatedAttachments = [...updatedAttachments, ...uploadedFiles];
+        }
+
         const { error } = await supabase
           .from('attendance')
-          .update({ ...attendanceData, updated_at: new Date().toISOString() })
+          .update({ 
+            ...attendanceData, 
+            attachments: updatedAttachments,
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', editingRecord.id);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data: newRecord, error: insertError } = await supabase
           .from('attendance')
-          .insert([attendanceData]);
+          .insert([attendanceData])
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (insertError) throw insertError;
+
+        const uploadedFiles = await uploadFiles(newRecord.id);
+        
+        const { error: updateError } = await supabase
+          .from('attendance')
+          .update({ attachments: uploadedFiles })
+          .eq('id', newRecord.id);
+
+        if (updateError) throw updateError;
       }
 
       setFormData({
@@ -151,10 +238,12 @@ const AttendanceTracking = ({ user }) => {
         students_on_leave: '',
         notes: ''
       });
+      setAttachments([]);
       setShowForm(false);
       setEditingRecord(null);
       setSelectedClass(null);
       setError(null);
+      setUploadError(null);
       fetchData();
     } catch (err) {
       setError(err.message);
@@ -176,7 +265,32 @@ const AttendanceTracking = ({ user }) => {
       students_on_leave: record.students_on_leave.toString(),
       notes: record.notes || ''
     });
+    setAttachments([]);
     setShowForm(true);
+  };
+
+  const handleDeleteAttachment = async (record, fileIndex) => {
+    if (!confirm('Delete this file?')) return;
+
+    try {
+      const attachments = record.attachments || [];
+      const fileToDelete = attachments[fileIndex];
+      
+      await deleteStoredFile(fileToDelete.path);
+      
+      const updatedAttachments = attachments.filter((_, i) => i !== fileIndex);
+      
+      const { error } = await supabase
+        .from('attendance')
+        .update({ attachments: updatedAttachments })
+        .eq('id', record.id);
+
+      if (error) throw error;
+      fetchData();
+    } catch (err) {
+      setError(err.message);
+      console.error('Error deleting attachment:', err);
+    }
   };
 
   const handleDelete = async (recordId) => {
@@ -212,7 +326,9 @@ const AttendanceTracking = ({ user }) => {
       students_on_leave: '',
       notes: ''
     });
+    setAttachments([]);
     setError(null);
+    setUploadError(null);
   };
 
   const formatDate = (dateStr) => {
@@ -363,6 +479,51 @@ const AttendanceTracking = ({ user }) => {
               />
             </div>
 
+            <div className="form-group">
+              <label htmlFor="attachments">
+                File Attachments * (1-3 images, max 200KB each)
+              </label>
+              <input
+                type="file"
+                id="attachments"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+              />
+              {uploadError && <div className="upload-error">{uploadError}</div>}
+              
+              {attachments.length > 0 && (
+                <div className="attachment-preview">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="attachment-item">
+                      <span>{file.name} ({Math.round(file.size / 1024)}KB)</span>
+                      <button type="button" onClick={() => removeAttachment(index)} className="remove-file-btn">
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {editingRecord && editingRecord.attachments && editingRecord.attachments.length > 0 && (
+                <div className="existing-attachments">
+                  <strong>Existing files:</strong>
+                  {editingRecord.attachments.map((file, index) => (
+                    <div key={index} className="attachment-item">
+                      <span>{file.name}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => handleDeleteAttachment(editingRecord, index)} 
+                        className="remove-file-btn"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="form-actions">
               <button type="submit" className="submit-btn">
                 {editingRecord ? 'Update Record' : 'Save Record'}
@@ -389,6 +550,7 @@ const AttendanceTracking = ({ user }) => {
                   <th>Present</th>
                   <th>Absent</th>
                   <th>On Leave</th>
+                  <th>Files</th>
                   <th>Notes</th>
                   <th>Actions</th>
                 </tr>
@@ -402,6 +564,13 @@ const AttendanceTracking = ({ user }) => {
                     <td className="present">{record.students_present}</td>
                     <td className="absent">{record.students_absent}</td>
                     <td className="on-leave">{record.students_on_leave}</td>
+                    <td className="files-cell">
+                      {record.attachments && record.attachments.length > 0 ? (
+                        <span>{record.attachments.length} file(s)</span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
                     <td className="notes-cell">{record.notes || '-'}</td>
                     <td>
                       <div className="action-buttons">
