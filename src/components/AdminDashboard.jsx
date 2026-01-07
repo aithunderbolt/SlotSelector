@@ -16,6 +16,7 @@ const AdminDashboard = ({ onLogout, user }) => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [slotFilter, setSlotFilter] = useState(user.role === 'super_admin' ? 'all' : user.assigned_slot_id);
   const [activeTab, setActiveTab] = useState('registrations');
   const [allowStudentInfo, setAllowStudentInfo] = useState(false);
@@ -222,16 +223,25 @@ const AdminDashboard = ({ onLogout, user }) => {
     }
 
     try {
+      setError(null);
+      setSuccessMessage(null);
+
       const { error } = await supabase
         .from('registrations')
         .delete()
         .eq('id', registrationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
 
+      setSuccessMessage(`Successfully deleted registration for ${studentName}`);
+      setTimeout(() => setSuccessMessage(null), 3000);
       fetchData();
     } catch (err) {
-      setError(err.message);
+      const errorMsg = err.message || 'Failed to delete registration. Please check database permissions.';
+      setError(errorMsg);
       console.error('Error deleting registration:', err);
     }
   };
@@ -379,6 +389,7 @@ const AdminDashboard = ({ onLogout, user }) => {
       )}
 
           {error && <div className="error-message">{error}</div>}
+          {successMessage && <div className="success-message">{successMessage}</div>}
 
           <div className="table-container">
         <table className="registrations-table">
