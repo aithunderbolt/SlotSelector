@@ -69,25 +69,23 @@ const Reports = () => {
     const classData = [];
 
     classes.forEach((classItem) => {
-      // Count attendance entries for this class
-      const attendanceCount = attendanceRecords.filter(
+      // Get attendance records for this class
+      const classAttendance = attendanceRecords.filter(
         (record) => record.class_id === classItem.id
-      ).length;
+      );
+      const attendanceCount = classAttendance.length;
 
       // Only include classes with attendance >= total slots
       if (attendanceCount >= slots.length) {
         // Calculate total students from attendance records
-        const totalStudents = attendanceRecords
-          .filter((record) => record.class_id === classItem.id)
-          .reduce((sum, record) => sum + record.total_students, 0);
+        const totalStudents = classAttendance.reduce(
+          (sum, record) => sum + record.total_students,
+          0
+        );
 
         // Get unique slot IDs that have attendance for this class
         const slotIdsWithAttendance = [
-          ...new Set(
-            attendanceRecords
-              .filter((record) => record.class_id === classItem.id)
-              .map((record) => record.slot_id)
-          ),
+          ...new Set(classAttendance.map((record) => record.slot_id)),
         ];
 
         // Get teacher names for these slots
@@ -97,12 +95,18 @@ const Reports = () => {
           .filter((name) => name)
           .join(', ');
 
+        // Collect all attachments from attendance records
+        const attachments = classAttendance
+          .filter((record) => record.attachments && record.attachments.length > 0)
+          .flatMap((record) => record.attachments);
+
         classData.push({
           name: classItem.name,
           description: classItem.description || '',
           totalStudents: totalStudents,
           teacherNames: teacherNames || 'N/A',
           attendanceCount: attendanceCount,
+          attachments: attachments,
         });
       }
     });
@@ -178,8 +182,28 @@ const Reports = () => {
                 <strong>Total Students:</strong> ${classItem.totalStudents}
               </div>
             </div>
-          </div>
         `;
+
+        // Add attendance images inside the class section
+        if (classItem.attachments && classItem.attachments.length > 0) {
+          html += `
+            <div style="margin-top: 12px;">
+              <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px;">Attendance Images:</div>
+              <div>
+          `;
+
+          classItem.attachments.forEach((attachment) => {
+            html += `<img src="${attachment.data}" alt="${attachment.name}" style="max-width: 200px; max-height: 150px; object-fit: contain; display: inline-block; margin-right: 8px; margin-bottom: 8px; border: 1px solid #dee2e6; border-radius: 4px; vertical-align: top;" />`;
+          });
+
+          html += `
+              </div>
+            </div>
+          `;
+        }
+
+        // Close the class section div
+        html += `</div>`;
 
         container.innerHTML = html;
         return container;
@@ -198,6 +222,24 @@ const Reports = () => {
 
         // Wait for fonts to load
         await document.fonts.ready;
+
+        // Wait for all images in the element to load
+        const images = element.querySelectorAll('img');
+        if (images.length > 0) {
+          await Promise.all(
+            Array.from(images).map(
+              (img) =>
+                new Promise((resolve) => {
+                  if (img.complete) {
+                    resolve();
+                  } else {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                  }
+                })
+            )
+          );
+        }
 
         // Convert to canvas
         const canvas = await html2canvas(element, {
@@ -308,6 +350,21 @@ const Reports = () => {
                   <span className="preview-value">{classItem.totalStudents}</span>
                 </div>
               </div>
+              {classItem.attachments && classItem.attachments.length > 0 && (
+                <div className="preview-attachments">
+                  <span className="preview-label">Attendance Images:</span>
+                  <div className="preview-images">
+                    {classItem.attachments.map((attachment, idx) => (
+                      <img
+                        key={idx}
+                        src={attachment.data}
+                        alt={attachment.name}
+                        className="preview-image"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
