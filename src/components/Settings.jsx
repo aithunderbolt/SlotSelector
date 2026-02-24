@@ -8,6 +8,7 @@ const Settings = () => {
   const [allowStudentInfo, setAllowStudentInfo] = useState(false);
   const [maxAttachmentSizeKB, setMaxAttachmentSizeKB] = useState('400');
   const [supervisorName, setSupervisorName] = useState('');
+  const [reportFileName, setReportFileName] = useState('Tilawah');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -46,12 +47,14 @@ const Settings = () => {
       const studentInfoSetting = settings.find(s => s.key === 'allow_student_info_entry');
       const maxAttachmentSetting = settings.find(s => s.key === 'max_attachment_size_kb');
       const supervisorSetting = settings.find(s => s.key === 'supervisor_name');
+      const reportFileNameSetting = settings.find(s => s.key === 'report_file_name');
 
       setFormTitle(titleSetting?.value || 'Tilawah Registration Form');
       setMaxRegistrations(maxRegSetting?.value || '15');
       setAllowStudentInfo(studentInfoSetting?.value === 'true');
       setMaxAttachmentSizeKB(maxAttachmentSetting?.value || '400');
       setSupervisorName(supervisorSetting?.value || '');
+      setReportFileName(reportFileNameSetting?.value || 'Tilawah');
 
       // Load student info marks settings
       const marksSettings = {
@@ -129,6 +132,7 @@ const Settings = () => {
         { key: 'allow_student_info_entry', value: allowStudentInfo.toString() },
         { key: 'max_attachment_size_kb', value: maxAttachmentSize.toString() },
         { key: 'supervisor_name', value: supervisorName.trim() },
+        { key: 'report_file_name', value: reportFileName.trim() },
         { key: 'student_info_marks_homework', value: studentInfoMarks.homework },
         { key: 'student_info_marks_partner_recitation', value: studentInfoMarks.partner_recitation },
         { key: 'student_info_marks_jali', value: studentInfoMarks.jali },
@@ -224,6 +228,20 @@ const Settings = () => {
             maxLength={100}
           />
           <small>This name will be displayed as the supervisor in the class reports</small>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="reportFileName">Report File Name</label>
+          <input
+            type="text"
+            id="reportFileName"
+            value={reportFileName}
+            onChange={(e) => setReportFileName(e.target.value)}
+            disabled={saving}
+            placeholder="Enter report file name"
+            maxLength={100}
+          />
+          <small>Downloaded reports will be named as: {reportFileName}-{new Date().toISOString().split('T')[0]}.pdf</small>
         </div>
 
         <div className="form-group">
